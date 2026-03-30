@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/question.schema.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^q-(?!r)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "factual_correction",
+        "value_arbitration",
+        "identity_style_calibration",
+        "contradiction_resolution",
+        "privacy_clarification"
+      ]
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proposal_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "question",
+    "proposal_refs"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Question"
+}

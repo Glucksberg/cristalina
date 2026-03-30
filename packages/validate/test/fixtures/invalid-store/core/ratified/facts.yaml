@@ -1,0 +1,55 @@
+items:
+  - id: fact-010
+    kind: preference
+    statement: "This object is missing provenance fields."
+    status: ratified
+    confidence: 0.92
+    privacy_scope: owner_private
+  - id: fact-011
+    kind: preference
+    statement: "This object supersedes a non-existent object."
+    status: ratified
+    confidence: 0.50
+    source_type: human_reply
+    source_ref: test
+    created_at: "2026-03-29T03:10:00Z"
+    last_confirmed_at: "2026-03-29T03:10:00Z"
+    confirmed_by: owner
+    evidence_count: 1
+    privacy_scope: owner_private
+    supersedes: ["fact-999"]
+  - id: fact-012
+    kind: preference
+    statement: "Crystallized with low confidence."
+    status: crystallized
+    confidence: 0.40
+    source_type: human_reply
+    source_ref: test
+    created_at: "2026-03-29T03:10:00Z"
+    last_confirmed_at: "2026-03-29T03:10:00Z"
+    confirmed_by: owner
+    evidence_count: 1
+    privacy_scope: owner_private
+  - id: fact-013
+    kind: preference
+    statement: "Deprecated with no successor."
+    status: deprecated
+    confidence: 0.80
+    source_type: human_reply
+    source_ref: test
+    created_at: "2026-03-29T03:10:00Z"
+    last_confirmed_at: "2026-03-29T03:10:00Z"
+    confirmed_by: owner
+    evidence_count: 1
+    privacy_scope: owner_private
+  - id: fact-014
+    kind: preference
+    statement: "Missing privacy scope."
+    status: ratified
+    confidence: 0.80
+    source_type: agent_inference
+    source_ref: test
+    created_at: "2026-03-29T03:10:00Z"
+    last_confirmed_at: null
+    confirmed_by: null
+    evidence_count: 0

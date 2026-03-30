@@ -1,0 +1,2 @@
+{"id":"bad-001","kind":"heartbeat","ts":"2026-03-29T02:00:00Z","summary":"Wrong ID prefix.","source_type":"runtime_observation","privacy_scope":"agent_operational"}
+{"id":"evt-2026-03-29-002","kind":"INVALID_KIND","ts":"not-a-date","summary":"Bad kind and date.","source_type":"made_up","privacy_scope":"nonexistent_scope"}

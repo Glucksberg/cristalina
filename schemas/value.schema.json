@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cristalina.dev/schemas/memory-object.schema.json",
+  "$id": "https://cristalina.dev/schemas/value.schema.json",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^val-"
     },
     "kind": {
       "type": "string",
@@ -59,6 +59,43 @@
       "type": "string",
       "minLength": 1
     },
+    "privacy_scope": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "applies_to": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -91,51 +128,11 @@
         }
       ]
     },
-    "privacy_scope": {
-      "type": "string",
-      "enum": [
-        "owner_private",
-        "agent_operational",
-        "project_private",
-        "shareable",
-        "public_safe"
-      ]
-    },
-    "supersedes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "superseded_by": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "valid_from": {
-      "type": "string"
-    },
-    "valid_to": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       }
-    },
-    "related_entities": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "notes": {
-      "type": "string"
     }
   },
   "required": [
@@ -146,12 +143,8 @@
     "confidence",
     "source_type",
     "source_ref",
-    "created_at",
-    "last_confirmed_at",
-    "confirmed_by",
-    "evidence_count",
     "privacy_scope"
   ],
   "additionalProperties": false,
-  "title": "Cristalina Canonical Memory Object"
+  "title": "Cristalina Value"
 }

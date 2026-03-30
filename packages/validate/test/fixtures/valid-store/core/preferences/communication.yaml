@@ -1,0 +1,13 @@
+items:
+  - id: fact-005
+    kind: preference
+    statement: "Default to concise operational mode; expand only when asked."
+    status: ratified
+    confidence: 0.88
+    source_type: human_reply
+    source_ref: daily-curation-2026-03-29/q2
+    created_at: "2026-03-29T03:10:00Z"
+    last_confirmed_at: "2026-03-29T03:10:00Z"
+    confirmed_by: owner
+    evidence_count: 1
+    privacy_scope: owner_private

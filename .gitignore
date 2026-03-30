@@ -16,6 +16,12 @@ venv/
 node_modules/
 dist/
 
+# pnpm
+.pnpm-store/
+
+# Build
+*.tsbuildinfo
+
 # Local test stores
 *.bak
 *.tmp

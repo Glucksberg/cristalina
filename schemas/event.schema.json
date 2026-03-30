@@ -1,32 +1,46 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cristalina.dev/schemas/event.schema.json",
-  "title": "Cristalina Event",
   "type": "object",
-  "required": [
-    "id",
-    "kind",
-    "ts",
-    "summary",
-    "source_type",
-    "privacy_scope"
-  ],
   "properties": {
     "id": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^evt-"
     },
     "kind": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "heartbeat",
+        "interaction",
+        "observation",
+        "inference",
+        "contradiction_detected",
+        "proposal_generated",
+        "compilation",
+        "validation_failure",
+        "ratification_applied",
+        "other"
+      ]
     },
     "ts": {
       "type": "string",
       "format": "date-time"
     },
     "summary": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "source_type": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "human_reply",
+        "human_message",
+        "agent_inference",
+        "agent_synthesis",
+        "runtime_observation",
+        "external_source",
+        "imported"
+      ]
     },
     "privacy_scope": {
       "type": "string",
@@ -38,12 +52,43 @@
         "public_safe"
       ]
     },
+    "actor": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "related_entities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "details": {
-      "type": [
-        "object",
-        "array",
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "tags": {
@@ -53,5 +98,14 @@
       }
     }
   },
-  "additionalProperties": true
+  "required": [
+    "id",
+    "kind",
+    "ts",
+    "summary",
+    "source_type",
+    "privacy_scope"
+  ],
+  "additionalProperties": true,
+  "title": "Cristalina Event"
 }

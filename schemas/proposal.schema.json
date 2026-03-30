@@ -1,28 +1,34 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://cristalina.dev/schemas/proposal.schema.json",
-  "title": "Cristalina Proposal",
   "type": "object",
-  "required": [
-    "id",
-    "type",
-    "target",
-    "reason",
-    "status",
-    "privacy_scope"
-  ],
   "properties": {
     "id": {
-      "type": "string"
+      "type": "string",
+      "pattern": "^prop-"
     },
     "type": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "new_fact",
+        "revise_fact",
+        "revise_preference",
+        "new_value",
+        "revise_value",
+        "identity_adjustment",
+        "privacy_change",
+        "supersede_memory",
+        "deprecate_memory",
+        "open_contradiction"
+      ]
     },
     "target": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "reason": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "supporting_events": {
       "type": "array",
@@ -39,10 +45,12 @@
       "type": "string",
       "enum": [
         "pending",
-        "accepted",
+        "queued_for_curation",
+        "approved",
         "rejected",
         "deferred",
-        "superseded"
+        "applied",
+        "expired"
       ]
     },
     "privacy_scope": {
@@ -54,7 +62,40 @@
         "shareable",
         "public_safe"
       ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "impact_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "requires_human_approval": {
+      "type": "boolean"
+    },
+    "question_candidate": {
+      "type": "string"
     }
   },
-  "additionalProperties": true
+  "required": [
+    "id",
+    "type",
+    "target",
+    "reason",
+    "supporting_events",
+    "confidence",
+    "status",
+    "privacy_scope"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Proposal"
 }

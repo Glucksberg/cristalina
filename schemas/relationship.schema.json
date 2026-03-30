@@ -1,28 +1,32 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cristalina.dev/schemas/memory-object.schema.json",
+  "$id": "https://cristalina.dev/schemas/relationship.schema.json",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
+      "pattern": "^rel-"
+    },
+    "from": {
+      "type": "string",
       "minLength": 1
     },
-    "kind": {
+    "relation": {
       "type": "string",
       "enum": [
-        "fact",
-        "preference",
-        "constraint",
-        "project",
-        "relationship",
-        "belief",
-        "identity_trait",
-        "style_rule",
-        "value",
-        "priority"
+        "prefers",
+        "works_on",
+        "trusts",
+        "avoids",
+        "owns",
+        "depends_on",
+        "contradicts",
+        "supersedes",
+        "belongs_to",
+        "cares_about"
       ]
     },
-    "statement": {
+    "to": {
       "type": "string",
       "minLength": 1
     },
@@ -59,6 +63,25 @@
       "type": "string",
       "minLength": 1
     },
+    "privacy_scope": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
+    "valid_from": {
+      "type": "string"
+    },
+    "valid_to": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -91,67 +114,24 @@
         }
       ]
     },
-    "privacy_scope": {
-      "type": "string",
-      "enum": [
-        "owner_private",
-        "agent_operational",
-        "project_private",
-        "shareable",
-        "public_safe"
-      ]
-    },
-    "supersedes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "superseded_by": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "valid_from": {
-      "type": "string"
-    },
-    "valid_to": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       }
-    },
-    "related_entities": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "notes": {
-      "type": "string"
     }
   },
   "required": [
     "id",
-    "kind",
-    "statement",
+    "from",
+    "relation",
+    "to",
     "status",
     "confidence",
     "source_type",
     "source_ref",
-    "created_at",
-    "last_confirmed_at",
-    "confirmed_by",
-    "evidence_count",
     "privacy_scope"
   ],
   "additionalProperties": false,
-  "title": "Cristalina Canonical Memory Object"
+  "title": "Cristalina Relationship"
 }

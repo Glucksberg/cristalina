@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/response.schema.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^qr-"
+    },
+    "question_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answer_type": {
+      "type": "string",
+      "enum": [
+        "accept",
+        "reject",
+        "edit",
+        "defer",
+        "uncertain"
+      ]
+    },
+    "answer_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "answered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "answered_by": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "id",
+    "question_ref",
+    "answer_type",
+    "answer_text",
+    "answered_at",
+    "answered_by"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Response"
+}

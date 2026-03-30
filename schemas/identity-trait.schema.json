@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cristalina.dev/schemas/memory-object.schema.json",
+  "$id": "https://cristalina.dev/schemas/identity-trait.schema.json",
   "type": "object",
   "properties": {
     "id": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^idt-"
     },
     "kind": {
       "type": "string",
@@ -59,6 +59,16 @@
       "type": "string",
       "minLength": 1
     },
+    "privacy_scope": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"
@@ -91,51 +101,11 @@
         }
       ]
     },
-    "privacy_scope": {
-      "type": "string",
-      "enum": [
-        "owner_private",
-        "agent_operational",
-        "project_private",
-        "shareable",
-        "public_safe"
-      ]
-    },
-    "supersedes": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "superseded_by": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "valid_from": {
-      "type": "string"
-    },
-    "valid_to": {
-      "type": [
-        "string",
-        "null"
-      ]
-    },
     "tags": {
       "type": "array",
       "items": {
         "type": "string"
       }
-    },
-    "related_entities": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "notes": {
-      "type": "string"
     }
   },
   "required": [
@@ -146,12 +116,8 @@
     "confidence",
     "source_type",
     "source_ref",
-    "created_at",
-    "last_confirmed_at",
-    "confirmed_by",
-    "evidence_count",
     "privacy_scope"
   ],
   "additionalProperties": false,
-  "title": "Cristalina Canonical Memory Object"
+  "title": "Cristalina Identity Trait"
 }

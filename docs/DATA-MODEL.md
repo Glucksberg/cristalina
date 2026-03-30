@@ -32,7 +32,7 @@ id: evt-2026-03-29-001
 kind: heartbeat
 ts: 2026-03-29T02:00:00Z
 summary: "Agent reviewed memory research and generated 2 proposals."
-source_type: agent_runtime
+source_type: runtime_observation
 privacy_scope: agent_operational
 ```
 
