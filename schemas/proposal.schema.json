@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/proposal.schema.json",
+  "title": "Cristalina Proposal",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "target",
+    "reason",
+    "status",
+    "privacy_scope"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "supporting_events": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "rejected",
+        "deferred",
+        "superseded"
+      ]
+    },
+    "privacy_scope": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

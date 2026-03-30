@@ -1,0 +1,33 @@
+name: cristalina
+display_name: Cristalina
+type: memory_protocol
+status: draft
+protocol_version: 1.0-draft
+repository_version: 0.1.0
+canonical_language: en
+license: Apache-2.0
+maintainers:
+  - name: Markus
+    role: creator
+modules:
+  - name: cristalina-core
+    status: planned
+  - name: cristalina-openclaw
+    status: reference-adapter-draft
+  - name: cristalina-cli
+    status: planned
+documents:
+  spec: docs/SPEC.md
+  data_model: docs/DATA-MODEL.md
+  curation_protocol: docs/CURATION-PROTOCOL.md
+  openclaw_adapter: docs/adapters/OPENCLAW-ADAPTER.md
+schemas:
+  manifest: schemas/manifest.schema.json
+  event: schemas/event.schema.json
+  proposal: schemas/proposal.schema.json
+  memory_object: schemas/memory-object.schema.json
+examples:
+  sample_store: examples/sample-store/.cristalina/
+
+release_notes:
+  v0_1_0: releases/v0.1.0.md

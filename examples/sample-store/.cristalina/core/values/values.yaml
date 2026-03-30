@@ -1,0 +1,7 @@
+values:
+  - id: value-001
+    statement: honesty above pleasing
+    priority: high
+  - id: value-002
+    statement: privacy above convenience
+    priority: high

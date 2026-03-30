@@ -1,0 +1,7 @@
+default_scope: owner_private
+escalation_rule: no_automatic_privacy_escalation
+sensitive_categories:
+  - credentials
+  - finances
+  - precise_location
+  - health

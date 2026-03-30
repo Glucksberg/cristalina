@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/manifest.schema.json",
+  "title": "Cristalina Manifest",
+  "type": "object",
+  "required": [
+    "name",
+    "display_name",
+    "type",
+    "protocol_version",
+    "documents",
+    "schemas"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "type": {
+      "const": "memory_protocol"
+    },
+    "status": {
+      "type": "string"
+    },
+    "protocol_version": {
+      "type": "string"
+    },
+    "repository_version": {
+      "type": "string"
+    },
+    "canonical_language": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "maintainers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "role"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "documents": {
+      "type": "object",
+      "required": [
+        "spec",
+        "data_model",
+        "curation_protocol",
+        "openclaw_adapter"
+      ],
+      "properties": {
+        "spec": {
+          "type": "string"
+        },
+        "data_model": {
+          "type": "string"
+        },
+        "curation_protocol": {
+          "type": "string"
+        },
+        "openclaw_adapter": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "schemas": {
+      "type": "object",
+      "required": [
+        "manifest",
+        "event",
+        "proposal",
+        "memory_object"
+      ],
+      "properties": {
+        "manifest": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "proposal": {
+          "type": "string"
+        },
+        "memory_object": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "examples": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
