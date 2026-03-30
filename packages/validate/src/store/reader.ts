@@ -92,8 +92,14 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     const data = readYamlFile(resolve(root, file), file, parseErrors);
     if (data === null) continue;
 
-    // Store the proposal/packet as a single object — no parent merging
-    proposals.push({ data, file });
+    // Extract individual proposals from items arrays, or store as single object
+    if (data.items && Array.isArray(data.items)) {
+      for (let i = 0; i < data.items.length; i++) {
+        proposals.push({ data: data.items[i] as Record<string, unknown>, file, index: i });
+      }
+    } else {
+      proposals.push({ data, file });
+    }
   }
 
   // Read core memory objects from core/ subdirectories
