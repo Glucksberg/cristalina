@@ -13,7 +13,9 @@ import {
   QuestionSchema,
   ResponseSchema,
   DerivedArtifactSchema,
+  AdapterWritebackContractSchema,
   CurationPacketSchema,
+  ProjectionManifestSchema,
   ManifestSchema,
 } from "../src/index.js";
 
@@ -31,7 +33,9 @@ const schemas = [
   { name: "question", schema: QuestionSchema, title: "Cristalina Question" },
   { name: "response", schema: ResponseSchema, title: "Cristalina Response" },
   { name: "derived-artifact", schema: DerivedArtifactSchema, title: "Cristalina Derived Artifact" },
+  { name: "adapter-writeback-contract", schema: AdapterWritebackContractSchema, title: "Cristalina Adapter Writeback Contract" },
   { name: "curation-packet", schema: CurationPacketSchema, title: "Cristalina Curation Packet" },
+  { name: "projection-manifest", schema: ProjectionManifestSchema, title: "Cristalina Projection Manifest" },
   { name: "manifest", schema: ManifestSchema, title: "Cristalina Manifest" },
 ];
 

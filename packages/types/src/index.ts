@@ -13,6 +13,8 @@ export {
   ProposalOperation,
   QuestionClass,
   RelationType,
+  DerivedArtifactType,
+  WritebackMode,
 } from "./enums.js";
 
 // ID patterns
@@ -81,6 +83,16 @@ export { ContradictionSchema, type Contradiction } from "./objects/contradiction
 export { QuestionSchema, type Question } from "./objects/question.js";
 export { ResponseSchema, type Response } from "./objects/response.js";
 export { DerivedArtifactSchema, type DerivedArtifact } from "./objects/derived-artifact.js";
+export {
+  AdapterWritebackFileRuleSchema,
+  AdapterWritebackContractSchema,
+  type AdapterWritebackFileRule,
+  type AdapterWritebackContract,
+} from "./objects/adapter-writeback-contract.js";
+export {
+  ProjectionManifestSchema,
+  type ProjectionManifest,
+} from "./objects/projection-manifest.js";
 export {
   CurationPacketSchema,
   type CurationPacket,

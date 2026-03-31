@@ -45,6 +45,14 @@ export {
 // Compiler
 export { compile, type CompilationOptions, type CompiledContext } from "./compiler/index.js";
 export { generateBootstrap, type BootstrapFiles } from "./compiler/bootstrap.js";
+export {
+  OPENCLAW_WRITEBACK_CONTRACT,
+  writebackRuleForPath,
+  buildDerivedArtifact,
+  buildProjectionManifest,
+  wrapProjectionContent,
+  buildRuntimeDriftLogInput,
+} from "./adapter/writeback.js";
 
 // Audit
 export { AuditLogger } from "./audit/logger.js";

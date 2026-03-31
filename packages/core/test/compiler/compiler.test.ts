@@ -3,12 +3,14 @@ import { resolve } from "node:path";
 import { mkdirSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
+import { parse as yamlParse } from "yaml";
 import { CristalinaStore } from "../../src/store/store.js";
 import { FixedClock } from "../../src/clock/clock.js";
 import { DeterministicIdGenerator } from "../../src/id/generator.js";
 import { compile } from "../../src/compiler/index.js";
 import { generateBootstrap } from "../../src/compiler/bootstrap.js";
 import { scoreObject, assignTier, filterByAudience } from "../../src/compiler/scoring.js";
+import { buildRuntimeDriftLogInput } from "../../src/adapter/writeback.js";
 import type { ParsedObject } from "@cristalina/validate";
 
 let root: string;
@@ -151,13 +153,23 @@ describe("compile", () => {
     expect(result.metadata.hot_count).toBeGreaterThan(0);
 
     expect(existsSync(resolve(root, "compiled/hot/session-pack.md"))).toBe(true);
+    expect(existsSync(resolve(root, "compiled/warm/extended-context.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/SOUL.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/VALUE.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/USER.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/MEMORY.md"))).toBe(true);
+    expect(existsSync(resolve(root, "compiled/metadata/projection-manifest.yaml"))).toBe(true);
 
     const soul = readFileSync(resolve(root, "compiled/bootstrap/SOUL.md"), "utf-8");
+    expect(soul).toContain("generated_by: cristalina-openclaw");
+    expect(soul).toContain("writeback_mode: proposal_extraction");
     expect(soul).toContain("Long-term technical companion.");
+
+    const manifest = yamlParse(readFileSync(resolve(root, "compiled/metadata/projection-manifest.yaml"), "utf-8")) as Record<string, unknown>;
+    expect(manifest.projection_id).toBe(result.metadata.projection_id);
+    expect(manifest.writeback_mode).toBe("proposal_extraction");
+    expect(Array.isArray(manifest.artifacts)).toBe(true);
+    expect((manifest.artifacts as Array<Record<string, unknown>>)).toHaveLength(7);
   });
 
   it("respects privacy scope filtering", async () => {
@@ -173,5 +185,58 @@ describe("compile", () => {
     const result = await compile(store, { audience: "public_safe" });
     expect(result.bootstrap.memory).toContain("Public fact.");
     expect(result.bootstrap.memory).not.toContain("Private secret.");
+  });
+
+  it("does not project private contradictions into public-safe outputs", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-public-1", kind: "fact", statement: "Public fact A.",
+      status: "ratified", confidence: 0.9, privacy_scope: "public_safe",
+    });
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-public-2", kind: "fact", statement: "Public fact B.",
+      status: "ratified", confidence: 0.9, privacy_scope: "public_safe",
+    });
+    store.appendYamlItem("core/ratified/contradictions.yaml", {
+      id: "ctr-private-001",
+      left: "fact-public-1",
+      right: "fact-public-2",
+      reason: "Private contradiction note.",
+      status: "open",
+      privacy_scope: "owner_private",
+    });
+
+    const result = await compile(store, { audience: "public_safe" });
+    expect(result.bootstrap.memory).not.toContain("Private contradiction note.");
+  });
+
+  it("writes YAML projection metadata into cold artifacts", async () => {
+    seedObjects();
+
+    await compile(store, { audience: "owner_private" });
+
+    const cold = yamlParse(readFileSync(resolve(root, "compiled/cold/deep-recall-index.yaml"), "utf-8")) as Record<string, unknown>;
+    expect(cold.projection_metadata).toBeTruthy();
+    expect((cold.projection_metadata as Record<string, unknown>).artifact_type).toBe("compiled_cold");
+  });
+});
+
+describe("buildRuntimeDriftLogInput", () => {
+  it("creates canonical runtime drift events for adapters", () => {
+    const input = buildRuntimeDriftLogInput({
+      path: "compiled/bootstrap/SOUL.md",
+      artifact_type: "bootstrap_soul",
+      projection_id: "drv-2026-03-29-001",
+      audience: "owner_private",
+      channel: "owner_private_dm",
+      diff_summary: "Style block changed by runtime",
+    });
+
+    expect(input.kind).toBe("runtime_drift");
+    expect(input.source_type).toBe("runtime_observation");
+    expect(input.details).toMatchObject({
+      path: "compiled/bootstrap/SOUL.md",
+      artifact_type: "bootstrap_soul",
+      writeback_mode: "proposal_extraction",
+    });
   });
 });

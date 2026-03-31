@@ -9,7 +9,15 @@
     },
     "artifact_type": {
       "type": "string",
-      "minLength": 1
+      "enum": [
+        "compiled_hot",
+        "compiled_warm",
+        "compiled_cold",
+        "bootstrap_soul",
+        "bootstrap_value",
+        "bootstrap_user",
+        "bootstrap_memory"
+      ]
     },
     "created_at": {
       "type": "string",
@@ -18,12 +26,59 @@
     "derived_from": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^(evt-|prop-|fact-|rel-|val-|idt-|sty-|ctr-|drv-|q-|qr-|dcp-)"
       }
     },
     "intended_audience": {
       "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
+    "generated_by": {
+      "type": "string",
       "minLength": 1
+    },
+    "source": {
+      "const": "canonical_projection"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projection_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "writeback_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "proposal_extraction",
+        "deterministic_sync"
+      ]
+    },
+    "parsable": {
+      "type": "boolean"
+    },
+    "channel": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checksum": {
+      "type": "string",
+      "minLength": 1
+    },
+    "machine_extractable_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [
@@ -31,7 +86,14 @@
     "artifact_type",
     "created_at",
     "derived_from",
-    "intended_audience"
+    "intended_audience",
+    "generated_by",
+    "source",
+    "path",
+    "projection_id",
+    "writeback_mode",
+    "parsable",
+    "checksum"
   ],
   "additionalProperties": false,
   "title": "Cristalina Derived Artifact"

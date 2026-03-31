@@ -14,6 +14,7 @@
         "interaction",
         "observation",
         "inference",
+        "runtime_drift",
         "contradiction_detected",
         "proposal_generated",
         "compilation",

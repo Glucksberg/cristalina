@@ -44,6 +44,7 @@ export const EventKind = z.enum([
   "interaction",
   "observation",
   "inference",
+  "runtime_drift",
   "contradiction_detected",
   "proposal_generated",
   "compilation",
@@ -174,3 +175,25 @@ export const RelationType = z.enum([
   "cares_about",
 ]);
 export type RelationType = z.infer<typeof RelationType>;
+
+// --- Derived Artifact Type (OPENCLAW-ADAPTER.md §9-11) ---
+
+export const DerivedArtifactType = z.enum([
+  "compiled_hot",
+  "compiled_warm",
+  "compiled_cold",
+  "bootstrap_soul",
+  "bootstrap_value",
+  "bootstrap_user",
+  "bootstrap_memory",
+]);
+export type DerivedArtifactType = z.infer<typeof DerivedArtifactType>;
+
+// --- Writeback Mode (OPENCLAW-ADAPTER.md §8) ---
+
+export const WritebackMode = z.enum([
+  "none",
+  "proposal_extraction",
+  "deterministic_sync",
+]);
+export type WritebackMode = z.infer<typeof WritebackMode>;

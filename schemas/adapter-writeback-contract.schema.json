@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/adapter-writeback-contract.schema.json",
+  "type": "object",
+  "properties": {
+    "adapter": {
+      "type": "string",
+      "minLength": 1
+    },
+    "writeback_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "proposal_extraction",
+        "deterministic_sync"
+      ]
+    },
+    "default_source_type": {
+      "const": "runtime_observation"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "artifact_type": {
+            "type": "string",
+            "enum": [
+              "compiled_hot",
+              "compiled_warm",
+              "compiled_cold",
+              "bootstrap_soul",
+              "bootstrap_value",
+              "bootstrap_user",
+              "bootstrap_memory"
+            ]
+          },
+          "parsable": {
+            "type": "boolean"
+          },
+          "machine_extractable_sections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "requires_human_review": {
+            "type": "boolean"
+          },
+          "allowed_operations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "create",
+                "confirm",
+                "revise",
+                "supersede",
+                "deprecate",
+                "contradict"
+              ]
+            }
+          },
+          "provenance_source": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "path",
+          "artifact_type",
+          "parsable",
+          "machine_extractable_sections",
+          "default_confidence",
+          "requires_human_review",
+          "allowed_operations",
+          "provenance_source"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "adapter",
+    "writeback_mode",
+    "default_source_type",
+    "files"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Adapter Writeback Contract"
+}

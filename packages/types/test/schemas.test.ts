@@ -5,6 +5,9 @@ import {
   MemoryObjectSchema,
   ContradictionSchema,
   ManifestSchema,
+  AdapterWritebackContractSchema,
+  ProjectionManifestSchema,
+  DerivedArtifactSchema,
   PrivacyScope,
   MemoryStatus,
   ProposalStatus,
@@ -18,7 +21,7 @@ describe("EventSchema", () => {
   it("accepts a valid event", () => {
     const result = EventSchema.safeParse({
       id: "evt-2026-03-29-001",
-      kind: "heartbeat",
+      kind: "runtime_drift",
       ts: "2026-03-29T02:00:00Z",
       summary: "Test event",
       source_type: "runtime_observation",
@@ -190,6 +193,90 @@ describe("Enums", () => {
     expect(ProposalStatus.options).toContain("expired");
     expect(ProposalStatus.options).not.toContain("accepted");
     expect(ProposalStatus.options).not.toContain("superseded");
+  });
+});
+
+describe("DerivedArtifactSchema", () => {
+  it("accepts projection metadata with writeback contract fields", () => {
+    const result = DerivedArtifactSchema.safeParse({
+      id: "drv-2026-03-29-001",
+      artifact_type: "bootstrap_soul",
+      created_at: "2026-03-29T02:00:00Z",
+      derived_from: ["fact-001", "idt-001"],
+      intended_audience: "owner_private",
+      generated_by: "cristalina-openclaw",
+      source: "canonical_projection",
+      path: "compiled/bootstrap/SOUL.md",
+      projection_id: "drv-2026-03-29-000",
+      writeback_mode: "proposal_extraction",
+      parsable: true,
+      checksum: "abc123",
+      machine_extractable_sections: ["identity", "style"],
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("AdapterWritebackContractSchema", () => {
+  it("accepts explicit proposal extraction contracts", () => {
+    const result = AdapterWritebackContractSchema.safeParse({
+      adapter: "cristalina-openclaw",
+      writeback_mode: "proposal_extraction",
+      default_source_type: "runtime_observation",
+      files: [{
+        path: "compiled/bootstrap/SOUL.md",
+        artifact_type: "bootstrap_soul",
+        parsable: true,
+        machine_extractable_sections: ["identity"],
+        default_confidence: 0.7,
+        requires_human_review: true,
+        allowed_operations: ["revise"],
+        provenance_source: "openclaw_projection_drift",
+      }],
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("ProjectionManifestSchema", () => {
+  it("accepts projection manifests with artifacts and contract", () => {
+    const result = ProjectionManifestSchema.safeParse({
+      projection_id: "drv-2026-03-29-010",
+      adapter: "cristalina-openclaw",
+      generated_at: "2026-03-29T02:00:00Z",
+      audience: "owner_private",
+      writeback_mode: "proposal_extraction",
+      artifacts: [{
+        id: "drv-2026-03-29-011",
+        artifact_type: "bootstrap_memory",
+        created_at: "2026-03-29T02:00:00Z",
+        derived_from: ["fact-001"],
+        intended_audience: "owner_private",
+        generated_by: "cristalina-openclaw",
+        source: "canonical_projection",
+        path: "compiled/bootstrap/MEMORY.md",
+        projection_id: "drv-2026-03-29-010",
+        writeback_mode: "proposal_extraction",
+        parsable: true,
+        checksum: "abc123",
+      }],
+      contract: {
+        adapter: "cristalina-openclaw",
+        writeback_mode: "proposal_extraction",
+        default_source_type: "runtime_observation",
+        files: [{
+          path: "compiled/bootstrap/MEMORY.md",
+          artifact_type: "bootstrap_memory",
+          parsable: true,
+          machine_extractable_sections: ["active_memory"],
+          default_confidence: 0.58,
+          requires_human_review: true,
+          allowed_operations: ["confirm"],
+          provenance_source: "openclaw_projection_drift",
+        }],
+      },
+    });
+    expect(result.success).toBe(true);
   });
 });
 

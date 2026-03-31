@@ -69,10 +69,11 @@ export function snapshotDirPath(isoTimestamp: string): string {
 /** Compiled context paths */
 export const COMPILED_PATHS = {
   hot: "compiled/hot/session-pack.md",
-  warmDir: "compiled/warm",
+  warm: "compiled/warm/extended-context.md",
   cold: "compiled/cold/deep-recall-index.yaml",
   bootstrapSoul: "compiled/bootstrap/SOUL.md",
   bootstrapValue: "compiled/bootstrap/VALUE.md",
   bootstrapUser: "compiled/bootstrap/USER.md",
   bootstrapMemory: "compiled/bootstrap/MEMORY.md",
+  projectionManifest: "compiled/metadata/projection-manifest.yaml",
 } as const;

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/projection-manifest.schema.json",
+  "type": "object",
+  "properties": {
+    "projection_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapter": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "minLength": 1
+    },
+    "writeback_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "proposal_extraction",
+        "deterministic_sync"
+      ]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://cristalina.dev/schemas/derived-artifact.schema.json"
+      }
+    },
+    "contract": {
+      "$ref": "https://cristalina.dev/schemas/adapter-writeback-contract.schema.json"
+    }
+  },
+  "required": [
+    "projection_id",
+    "adapter",
+    "generated_at",
+    "audience",
+    "writeback_mode",
+    "artifacts",
+    "contract"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Projection Manifest"
+}
