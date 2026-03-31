@@ -4,6 +4,7 @@ import type {
   MemoryObjectKind as MemoryObjectKindType,
   PrivacyScope as PrivacyScopeType,
   ProposalOperation as ProposalOperationType,
+  ProposalType as ProposalTypeType,
 } from "@cristalina/types";
 import type { OperationInput } from "../operations/types.js";
 import type {
@@ -11,9 +12,11 @@ import type {
   CurationResponse,
   NormalizedDecision,
 } from "./ratification-types.js";
+import { assertProposalTypeSemantics, requireProposalType } from "./proposal-type-policy.js";
 
 interface DecisionSeed {
   proposalId: string;
+  proposalType: ProposalTypeType;
   operation: ProposalOperationType;
   targetRef: Record<string, unknown>;
   candidatePayload: Record<string, unknown>;
@@ -71,13 +74,29 @@ function buildDecisionSeed(
   response: CurationResponse,
   targetObject: ParsedObject | null,
 ): DecisionSeed {
+  const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
+  const proposalType = requireProposalType(proposal.data.type, `Proposal ${proposalId}`) as ProposalTypeType;
+  const operation = isProposalOperation(proposal.data.operation)
+    ? proposal.data.operation
+    : "create";
+  const candidatePayload = {
+    ...(getRecord(proposal.data.candidate_payload) ?? {}),
+  };
+  const kind = isMemoryObjectKind(candidatePayload.kind) ? candidatePayload.kind : null;
+
+  assertProposalTypeSemantics(
+    proposalType,
+    operation,
+    kind,
+    `Proposal ${proposalId}`,
+  );
+
   return {
-    proposalId: typeof proposal.data.id === "string" ? proposal.data.id : "unknown",
-    operation: isProposalOperation(proposal.data.operation) ? proposal.data.operation : "create",
+    proposalId,
+    proposalType,
+    operation,
     targetRef: getRecord(proposal.data.target_ref) ?? {},
-    candidatePayload: {
-      ...(getRecord(proposal.data.candidate_payload) ?? {}),
-    },
+    candidatePayload,
     editedText: response.answer_text.trim(),
     currentStatement: typeof targetObject?.data.statement === "string"
       ? targetObject.data.statement

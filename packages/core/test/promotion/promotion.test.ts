@@ -136,6 +136,34 @@ describe("generateCurationPacket", () => {
 
     expect(packet!.questions[0].type).toBe("value_arbitration");
   });
+
+  it("uses proposal type policy to classify privacy questions", async () => {
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "privacy_change",
+      operation: "revise",
+      target_ref: {
+        object_id: "fact-privacy-001",
+        kind: "fact",
+        facet: "sharing_rules",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Do not mention the private repository outside owner-private contexts.",
+        privacy_scope: "owner_private",
+      },
+      reason: "The current sharing boundary is too loose.",
+      provenance: { supporting_events: [] },
+      confidence: 0.59,
+      privacy_scope: "owner_private",
+    });
+
+    const snapshot = await store.read();
+    const packet = generateCurationPacket(snapshot, store.clock, store.idGen);
+
+    expect(packet).not.toBeNull();
+    expect(packet!.questions[0].type).toBe("privacy_clarification");
+  });
 });
 
 describe("applyRatification", () => {
@@ -410,5 +438,38 @@ describe("applyRatification", () => {
 
     expect(result.applied).toHaveLength(0);
     expect(result.skipped).toContain("q-unknown");
+  });
+
+  it("rejects ratification for proposals with incompatible type semantics persisted on disk", async () => {
+    store.appendYamlItem("proposals/2026-03/pending-updates.yaml", {
+      id: "prop-bad-001",
+      type: "open_contradiction",
+      operation: "create",
+      target_ref: {
+        kind: "fact",
+        facet: "working_style",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Bad contradiction proposal.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Malformed imported proposal.",
+      provenance: {
+        supporting_events: [],
+      },
+      confidence: 0.5,
+      status: "pending",
+      privacy_scope: "owner_private",
+      created_at: "2026-03-29T12:00:00Z",
+      created_by: "agent",
+    });
+
+    await expect(applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "ok" },
+      ],
+      questionToProposal: new Map([["q-001", "prop-bad-001"]]),
+    })).rejects.toThrow('Proposal prop-bad-001 uses incompatible operation "create" for proposal type "open_contradiction"');
   });
 });

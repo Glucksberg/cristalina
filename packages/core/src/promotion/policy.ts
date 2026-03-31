@@ -1,4 +1,5 @@
 import type { ParsedObject } from "@cristalina/validate";
+import { isProposalType, proposalTypeRequiresHumanApproval } from "./proposal-type-policy.js";
 
 /** Which domains require human approval before canonical update */
 export interface PromotionPolicy {
@@ -40,10 +41,8 @@ export function requiresHumanApproval(
   const kind = typeof payload?.kind === "string" ? payload.kind : null;
   if (kind && policy.highRiskKinds.has(kind)) return true;
 
-  // Check if proposal type touches high-risk domains
-  const proposalType = typeof data.type === "string" ? data.type : "";
-  const highRiskTypes = ["new_value", "revise_value", "identity_adjustment", "privacy_change"];
-  if (highRiskTypes.includes(proposalType)) return true;
+  const proposalType = isProposalType(data.type) ? data.type : null;
+  if (proposalType && proposalTypeRequiresHumanApproval(proposalType)) return true;
 
   return false;
 }

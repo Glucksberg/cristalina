@@ -15,6 +15,14 @@ export { executeOperation, planOperation, applyEffects } from "./operations/inde
 export { generateCurationPacket, type GeneratedPacket } from "./promotion/curation.js";
 export { applyRatification, type RatificationInput, type RatificationResult, type CurationResponse } from "./promotion/ratification.js";
 export { type PromotionPolicy, DEFAULT_POLICY, requiresHumanApproval } from "./promotion/policy.js";
+export {
+  getProposalTypePolicy,
+  isProposalType,
+  requireProposalType,
+  assertProposalTypeSemantics,
+  questionClassForProposalType,
+  proposalTypeRequiresHumanApproval,
+} from "./promotion/proposal-type-policy.js";
 
 // Compiler
 export { compile, type CompilationOptions, type CompiledContext } from "./compiler/index.js";

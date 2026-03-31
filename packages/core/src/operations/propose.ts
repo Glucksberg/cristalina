@@ -3,6 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ProposeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { pendingProposalsPath } from "../store/paths.js";
+import { assertProposalTypeSemantics } from "../promotion/proposal-type-policy.js";
 
 export function planPropose(
   _store: ParsedStore,
@@ -10,6 +11,13 @@ export function planPropose(
   clock: Clock,
   idGen: IdGenerator,
 ): PlanResult {
+  assertProposalTypeSemantics(
+    input.type,
+    input.operation,
+    input.candidate_payload.kind,
+    `Proposal ${input.type}`,
+  );
+
   const id = idGen.next("proposal");
   const ts = clock.isoNow();
   const dateStr = clock.dateStr();

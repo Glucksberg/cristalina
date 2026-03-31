@@ -139,4 +139,49 @@ describe("PROPOSE operation", () => {
     const entry = JSON.parse(auditContent);
     expect(entry.operation).toBe("PROPOSE");
   });
+
+  it("rejects incompatible proposal type and operation combinations", async () => {
+    await expect(executeOperation(store, {
+      op: "PROPOSE",
+      type: "new_value",
+      operation: "deprecate",
+      target_ref: {
+        object_id: "val-seed-001",
+        kind: "value",
+      },
+      candidate_payload: {
+        kind: "value",
+        privacy_scope: "owner_private",
+      },
+      reason: "Invalid combination.",
+      provenance: {
+        supporting_events: [],
+      },
+      confidence: 0.5,
+      privacy_scope: "owner_private",
+    })).rejects.toThrow('Proposal new_value uses incompatible operation "deprecate" for proposal type "new_value"');
+  });
+
+  it("rejects incompatible proposal type and payload kind combinations", async () => {
+    await expect(executeOperation(store, {
+      op: "PROPOSE",
+      type: "identity_adjustment",
+      operation: "revise",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "This should not be accepted as identity adjustment.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Invalid domain.",
+      provenance: {
+        supporting_events: [],
+      },
+      confidence: 0.55,
+      privacy_scope: "owner_private",
+    })).rejects.toThrow('Proposal identity_adjustment uses incompatible kind "fact" for proposal type "identity_adjustment"');
+  });
 });

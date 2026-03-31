@@ -1,8 +1,10 @@
 import type { ParsedStore, ParsedObject } from "@cristalina/validate";
+import type { MemoryObjectKind as MemoryObjectKindType } from "@cristalina/types";
 import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import { curationPacketPath } from "../store/paths.js";
 import { requiresHumanApproval, type PromotionPolicy, DEFAULT_POLICY } from "./policy.js";
+import { questionClassForProposalType, requireProposalType } from "./proposal-type-policy.js";
 
 export interface CurationQuestion {
   id: string;
@@ -81,17 +83,10 @@ function scoreProposal(proposal: ParsedObject, policy: PromotionPolicy): number 
 }
 
 function questionClassForProposal(proposal: ParsedObject): string {
-  const type = typeof proposal.data.type === "string" ? proposal.data.type : "";
-  const operation = proposalOperation(proposal);
-  const kind = proposalKind(proposal);
-
-  if (operation === "contradict" || type === "open_contradiction") return "contradiction_resolution";
-  if (type === "privacy_change") return "privacy_clarification";
-  if (kind === "value" || kind === "priority") return "value_arbitration";
-  if (kind === "identity_trait" || kind === "style_rule" || type === "identity_adjustment") {
-    return "identity_style_calibration";
-  }
-  return "factual_correction";
+  const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
+  const type = requireProposalType(proposal.data.type, `Proposal ${proposalId}`);
+  const kind = proposalKind(proposal) as MemoryObjectKindType;
+  return questionClassForProposalType(type, kind);
 }
 
 /** Generate a human-facing question from a structured proposal. */
