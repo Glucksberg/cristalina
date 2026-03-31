@@ -16,31 +16,38 @@ Cristalina is **not a runtime**. It is a **portable, file-first, human-governed 
 This repository provides:
 - the official protocol spec
 - the data model
+- the active architecture convergence document
 - the OpenClaw reference adapter
 - the human curation protocol
 - starter schemas for validation
 - a sample `.cristalina/` store layout
+- reference packages for types, validation, and core lifecycle work
 
 ## Repository Layout
 
 ```text
 .
-├── README.md
-├── manifest.yaml
-├── docs/
-│   ├── SPEC.md
-│   ├── DATA-MODEL.md
-│   ├── CURATION-PROTOCOL.md
-│   └── adapters/
-│       └── OPENCLAW-ADAPTER.md
-├── schemas/
-│   ├── manifest.schema.json
-│   ├── event.schema.json
-│   ├── proposal.schema.json
-│   └── memory-object.schema.json
-└── examples/
-    └── sample-store/
-        └── .cristalina/
+|-- README.md
+|-- manifest.yaml
+|-- docs/
+|   |-- SPEC.md
+|   |-- DATA-MODEL.md
+|   |-- CURATION-PROTOCOL.md
+|   |-- ARCHITECTURE-V2.md
+|   `-- adapters/
+|       `-- OPENCLAW-ADAPTER.md
+|-- schemas/
+|   |-- manifest.schema.json
+|   |-- event.schema.json
+|   |-- proposal.schema.json
+|   `-- memory-object.schema.json
+|-- packages/
+|   |-- types/
+|   |-- validate/
+|   `-- core/
+`-- examples/
+    `-- sample-store/
+        `-- .cristalina/
 ```
 
 ## Core Thesis
@@ -63,8 +70,11 @@ Cristalina therefore enforces a governed write model:
 Read in this order:
 1. `docs/SPEC.md`
 2. `docs/DATA-MODEL.md`
-3. `docs/CURATION-PROTOCOL.md`
-4. `docs/adapters/OPENCLAW-ADAPTER.md`
+3. `docs/ARCHITECTURE-V2.md`
+4. `docs/CURATION-PROTOCOL.md`
+5. `docs/adapters/OPENCLAW-ADAPTER.md`
+
+If older draft documents and the current repository implementation diverge, `docs/ARCHITECTURE-V2.md` is the active convergence layer for repository work.
 
 ## v1 Focus
 
@@ -80,12 +90,11 @@ Cristalina v1 includes:
 
 ## Near-Term Roadmap
 
-- formalize migration/version rules
-- add deterministic validators
-- add CLI scaffolding
-- add reference tests for context compilation
-- define adapter contract for non-OpenClaw runtimes
-
+- freeze canonical representation
+- redesign proposal and ratification payloads
+- move privacy and authority checks into a policy layer
+- align `packages/core`, `packages/types`, and `packages/validate`
+- harden the OpenClaw adapter contract around runtime drift
 
 ## Governance Files
 
@@ -96,9 +105,8 @@ Cristalina v1 includes:
 - `CHANGELOG.md`
 - `releases/v0.1.0.md`
 
-
 ## Repository Status
 
 - Protocol version: `1.0-draft`
-- Repository version: `0.1.0`
-- Maturity: draft / architecture review
+- Repository version: `0.2.0-dev`
+- Maturity: draft / architecture v2 convergence

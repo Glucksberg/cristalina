@@ -3,22 +3,27 @@ display_name: Cristalina
 type: memory_protocol
 status: draft
 protocol_version: 1.0-draft
-repository_version: 0.1.0
+repository_version: 0.2.0-dev
 canonical_language: en
 license: Apache-2.0
 maintainers:
   - name: Markus
     role: creator
 modules:
-  - name: cristalina-core
-    status: planned
+  - name: "@cristalina/types"
+    status: implemented-needs-v2-alignment
+  - name: "@cristalina/validate"
+    status: implemented-needs-v2-alignment
+  - name: "@cristalina/core"
+    status: prototype-needs-v2-alignment
   - name: cristalina-openclaw
-    status: reference-adapter-draft
+    status: spec-only
   - name: cristalina-cli
     status: planned
 documents:
   spec: docs/SPEC.md
   data_model: docs/DATA-MODEL.md
+  architecture_v2: docs/ARCHITECTURE-V2.md
   curation_protocol: docs/CURATION-PROTOCOL.md
   openclaw_adapter: docs/adapters/OPENCLAW-ADAPTER.md
 schemas:
