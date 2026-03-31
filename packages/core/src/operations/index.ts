@@ -5,6 +5,14 @@ import type { OperationInput, StoreEffect, OperationResult, PlanResult } from ".
 import type { CristalinaStore } from "../store/store.js";
 import { planLog } from "./log.js";
 import { planPropose } from "./propose.js";
+import { planConfirm } from "./confirm.js";
+import { planRevise } from "./revise.js";
+import { planExtend } from "./extend.js";
+import { planContradict } from "./contradict.js";
+import { planSupersede } from "./supersede.js";
+import { planDeprecate } from "./deprecate.js";
+import { planCrystallize } from "./crystallize.js";
+import { planArchive } from "./archive.js";
 import { auditLogPath } from "../store/paths.js";
 
 /** Plan an operation: compute effects without applying them */
@@ -15,12 +23,16 @@ export function planOperation(
   idGen: IdGenerator,
 ): PlanResult {
   switch (input.op) {
-    case "LOG":
-      return planLog(store, input, clock, idGen);
-    case "PROPOSE":
-      return planPropose(store, input, clock, idGen);
-    default:
-      throw new Error(`Operation "${(input as OperationInput).op}" is not yet implemented`);
+    case "LOG":        return planLog(store, input, clock, idGen);
+    case "PROPOSE":    return planPropose(store, input, clock, idGen);
+    case "CONFIRM":    return planConfirm(store, input, clock, idGen);
+    case "REVISE":     return planRevise(store, input, clock, idGen);
+    case "EXTEND":     return planExtend(store, input, clock, idGen);
+    case "CONTRADICT": return planContradict(store, input, clock, idGen);
+    case "SUPERSEDE":  return planSupersede(store, input, clock, idGen);
+    case "DEPRECATE":  return planDeprecate(store, input, clock, idGen);
+    case "CRYSTALLIZE": return planCrystallize(store, input, clock, idGen);
+    case "ARCHIVE":    return planArchive(store, input, clock, idGen);
   }
 }
 
