@@ -56,6 +56,32 @@ describe("CONFIRM", () => {
   });
 });
 
+describe("CREATE", () => {
+  it("creates a new canonical object", async () => {
+    const result = await executeOperation(store, {
+      op: "CREATE",
+      kind: "preference",
+      statement: "Use concise answers during operational work.",
+      source_type: "human_reply",
+      source_ref: "curation/q-001",
+      confirmedBy: "owner",
+      confidence: 0.92,
+      privacy_scope: "owner_private",
+      tags: ["communication"],
+      authorized: true,
+    });
+
+    expect(result.operation).toBe("CREATE");
+    expect(result.produced[0]).toMatch(/^fact-test-/);
+
+    const snapshot = await store.read();
+    const created = snapshot.coreObjects.find((obj) => obj.data.id === result.produced[0]);
+    expect(created).toBeTruthy();
+    expect(created!.data.statement).toBe("Use concise answers during operational work.");
+    expect(created!.data.confirmed_by).toBe("owner");
+  });
+});
+
 describe("REVISE", () => {
   it("updates the statement", async () => {
     seedObject({ id: "fact-test-001", kind: "preference", statement: "old", status: "ratified", confidence: 0.8, privacy_scope: "owner_private" });

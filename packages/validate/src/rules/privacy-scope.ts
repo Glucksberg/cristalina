@@ -15,6 +15,7 @@ export function privacyScope(store: ParsedStore): Diagnostic[] {
 
   const allObjects: ParsedObject[] = [
     ...store.events,
+    ...store.proposals,
     ...store.coreObjects,
     ...store.contradictions,
   ];

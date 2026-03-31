@@ -26,6 +26,7 @@ describe("lintStore", () => {
     const rules = new Set(result.diagnostics.map((d) => d.rule));
     // Should detect schema issues
     expect(rules).toContain("schema-conformance/event");
+    expect(rules).toContain("schema-conformance/proposal");
     // Should detect missing provenance
     expect(rules).toContain("required-provenance/missing");
     // Should detect supersession orphans

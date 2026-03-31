@@ -10,6 +10,7 @@ export {
   MemoryOperation,
   MemoryObjectKind,
   ProposalType,
+  ProposalOperation,
   QuestionClass,
   RelationType,
 } from "./enums.js";
@@ -53,7 +54,18 @@ export { TemporalFields } from "./shared/temporal.js";
 
 // Object schemas
 export { EventSchema, type Event } from "./objects/event.js";
-export { ProposalSchema, type Proposal } from "./objects/proposal.js";
+export {
+  ProposalSchema,
+  ProposalTargetRefSchema,
+  ProposalCandidatePayloadSchema,
+  ProposalRiskSchema,
+  ProposalProvenanceSchema,
+  type Proposal,
+  type ProposalTargetRef,
+  type ProposalCandidatePayload,
+  type ProposalRisk,
+  type ProposalProvenance,
+} from "./objects/proposal.js";
 export { MemoryObjectSchema, type MemoryObject } from "./objects/memory-object.js";
 export { RelationshipSchema, type Relationship } from "./objects/relationship.js";
 export { ValueSchema, type Value } from "./objects/value.js";

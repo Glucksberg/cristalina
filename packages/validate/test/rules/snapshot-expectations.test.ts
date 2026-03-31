@@ -5,7 +5,7 @@ import type { ParsedStore } from "../../src/store/reader.js";
 function makeStore(files: string[]): ParsedStore {
   return {
     root: "/test", manifest: null, manifestFile: null,
-    events: [], proposals: [], coreObjects: [], contradictions: [],
+    events: [], proposals: [], curationPackets: [], coreObjects: [], contradictions: [],
     files, parseErrors: [],
   };
 }

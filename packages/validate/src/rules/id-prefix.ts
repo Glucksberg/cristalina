@@ -13,6 +13,14 @@ export function idPrefix(store: ParsedStore): Diagnostic[] {
     checkPrefix(obj, ID_PREFIXES.event, "event", diagnostics);
   }
 
+  for (const obj of store.proposals) {
+    checkPrefix(obj, ID_PREFIXES.proposal, "proposal", diagnostics);
+  }
+
+  for (const obj of store.curationPackets) {
+    checkNamedPrefix(obj, "packet_id", ID_PREFIXES.curationPacket, "curation-packet", diagnostics);
+  }
+
   for (const obj of store.coreObjects) {
     const id = obj.data.id;
     if (typeof id !== "string") continue;
@@ -30,6 +38,30 @@ export function idPrefix(store: ParsedStore): Diagnostic[] {
   }
 
   return diagnostics;
+}
+
+function checkNamedPrefix(
+  obj: ParsedObject,
+  field: string,
+  expectedPrefix: string,
+  objectType: string,
+  diagnostics: Diagnostic[],
+): void {
+  const id = obj.data[field];
+  if (typeof id !== "string") {
+    diagnostics.push(
+      error(`${RULE}/missing`, `${objectType} object is missing ${field}`, { file: obj.file }),
+    );
+    return;
+  }
+  if (!id.startsWith(expectedPrefix)) {
+    diagnostics.push(
+      error(`${RULE}/wrong`, `${field} "${id}" should start with "${expectedPrefix}" for ${objectType}`, {
+        file: obj.file,
+        objectId: id,
+      }),
+    );
+  }
 }
 
 function checkPrefix(

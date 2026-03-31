@@ -1,5 +1,7 @@
 import {
   EventSchema,
+  ProposalSchema,
+  CurationPacketSchema,
   MemoryObjectSchema,
   RelationshipSchema,
   ValueSchema,
@@ -41,6 +43,16 @@ export function schemaConformance(store: ParsedStore): Diagnostic[] {
     validateObject(obj, EventSchema, "event", diagnostics);
   }
 
+  // Validate proposals
+  for (const obj of store.proposals) {
+    validateObject(obj, ProposalSchema, "proposal", diagnostics);
+  }
+
+  // Validate curation packets
+  for (const obj of store.curationPackets) {
+    validateObject(obj, CurationPacketSchema, "curation-packet", diagnostics);
+  }
+
   // Validate core memory objects — dispatch to specialized schema by kind
   for (const obj of store.coreObjects) {
     const hasId = typeof obj.data.id === "string";
@@ -77,9 +89,15 @@ function validateObject(
         error(`${RULE}/${schemaName}`, issue.message, {
           file: obj.file,
           path: pathStr,
-          objectId: typeof obj.data.id === "string" ? obj.data.id : undefined,
+          objectId: objectIdentifier(obj.data),
         }),
       );
     }
   }
+}
+
+function objectIdentifier(data: Record<string, unknown>): string | undefined {
+  if (typeof data.id === "string") return data.id;
+  if (typeof data.packet_id === "string") return data.packet_id;
+  return undefined;
 }

@@ -17,9 +17,11 @@ export function planPropose(
   const proposal: Record<string, unknown> = {
     id,
     type: input.type,
-    target: input.target,
+    operation: input.operation,
+    target_ref: input.target_ref,
+    candidate_payload: input.candidate_payload,
     reason: input.reason,
-    supporting_events: input.supporting_events,
+    provenance: input.provenance,
     confidence: input.confidence,
     status: "pending",
     privacy_scope: input.privacy_scope,
@@ -27,9 +29,12 @@ export function planPropose(
     created_by: input.actor ?? "agent",
   };
 
-  if (input.impact_level) proposal.impact_level = input.impact_level;
-  if (input.requires_human_approval !== undefined) proposal.requires_human_approval = input.requires_human_approval;
-  if (input.question_candidate) proposal.question_candidate = input.question_candidate;
+  if (input.policy_tags && input.policy_tags.length > 0) proposal.policy_tags = input.policy_tags;
+  if (input.risk) proposal.risk = input.risk;
+
+  const targetLabel = typeof input.target_ref.object_id === "string"
+    ? input.target_ref.object_id
+    : `${input.target_ref.kind ?? "object"}${input.target_ref.facet ? `:${input.target_ref.facet}` : ""}`;
 
   const effects: StoreEffect[] = [
     { type: "append-yaml-item", path: pendingProposalsPath(dateStr), item: proposal },
@@ -39,10 +44,10 @@ export function planPropose(
     timestamp: ts,
     operation: "PROPOSE",
     actor: input.actor ?? "agent",
-    targets: [input.target],
+    targets: [targetLabel],
     produced: [id],
-    provenance: `proposal/${input.type}`,
-    effects_summary: `Proposed ${input.type}: ${input.reason.slice(0, 80)}`,
+    provenance: `proposal/${input.operation}/${input.type}`,
+    effects_summary: `Proposed ${input.operation} on ${targetLabel}: ${input.reason.slice(0, 80)}`,
   };
 
   return { effects, auditEntry, produced: [id] };

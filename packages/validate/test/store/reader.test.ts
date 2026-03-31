@@ -60,25 +60,29 @@ describe("readStore", () => {
     rmSync(dir, { recursive: true });
   });
 
-  it("reads proposals as single objects (no hybrid merging)", async () => {
+  it("separates curation packets from proposals", async () => {
     const dir = tmpStore();
     mkdirSync(resolve(dir, "proposals/2026-03"), { recursive: true });
     writeFileSync(resolve(dir, "proposals/2026-03/daily.yaml"), `
-id: curation-2026-03-29
+packet_id: dcp-2026-03-29
+created_at: 2026-03-29T20:00:00Z
+owner: owner
 question_count: 2
 questions:
-  - id: q1
+  - id: q-001
     type: factual_correction
     question: "Test?"
-  - id: q2
+    proposal_refs: [prop-001]
+  - id: q-002
     type: value_arbitration
     question: "Test 2?"
+    proposal_refs: [prop-002]
 `);
 
     const store = await readStore(dir);
-    // Should be stored as a single proposal object, not merged hybrids
-    expect(store.proposals).toHaveLength(1);
-    expect(store.proposals[0].data.id).toBe("curation-2026-03-29");
+    expect(store.proposals).toHaveLength(0);
+    expect(store.curationPackets).toHaveLength(1);
+    expect(store.curationPackets[0].data.packet_id).toBe("dcp-2026-03-29");
 
     rmSync(dir, { recursive: true });
   });

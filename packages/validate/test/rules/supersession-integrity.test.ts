@@ -9,6 +9,7 @@ function makeStore(coreObjects: ParsedStore["coreObjects"]): ParsedStore {
     manifestFile: null,
     events: [],
     proposals: [],
+    curationPackets: [],
     coreObjects,
     contradictions: [],
     files: [],

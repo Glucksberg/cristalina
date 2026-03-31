@@ -18,69 +18,139 @@ export interface GeneratedPacket {
   questions: CurationQuestion[];
 }
 
-/** Score a proposal for curation priority */
+function getRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? value as Record<string, unknown> : null;
+}
+
+function getProposalPayload(proposal: ParsedObject): Record<string, unknown> {
+  return getRecord(proposal.data.candidate_payload) ?? {};
+}
+
+function getProposalTargetRef(proposal: ParsedObject): Record<string, unknown> {
+  return getRecord(proposal.data.target_ref) ?? {};
+}
+
+function getRisk(proposal: ParsedObject): Record<string, unknown> {
+  return getRecord(proposal.data.risk) ?? {};
+}
+
+function proposalKind(proposal: ParsedObject): string {
+  const payload = getProposalPayload(proposal);
+  return typeof payload.kind === "string" ? payload.kind : "fact";
+}
+
+function proposalOperation(proposal: ParsedObject): string {
+  return typeof proposal.data.operation === "string" ? proposal.data.operation : "create";
+}
+
+function proposalPriority(proposal: ParsedObject): "low" | "medium" | "high" | "critical" {
+  const risk = getRisk(proposal);
+  if (risk.level === "critical" || risk.level === "high" || risk.level === "medium" || risk.level === "low") {
+    return risk.level;
+  }
+  if (requiresHumanApproval(proposal)) return "high";
+  return "medium";
+}
+
+function proposalTargetLabel(proposal: ParsedObject): string {
+  const targetRef = getProposalTargetRef(proposal);
+  if (typeof targetRef.object_id === "string") return targetRef.object_id;
+  if (typeof targetRef.facet === "string") return targetRef.facet;
+  if (typeof targetRef.kind === "string") return targetRef.kind;
+  return "memory";
+}
+
+/** Score a proposal for curation priority. */
 function scoreProposal(proposal: ParsedObject, policy: PromotionPolicy): number {
   let score = 0;
-  const data = proposal.data;
+  const risk = getRisk(proposal);
 
-  // High-risk domains get higher priority
-  const target = typeof data.target === "string" ? data.target : "";
-  const type = typeof data.type === "string" ? data.type : "";
-  if (requiresHumanApproval(target, type, policy)) score += 30;
+  if (requiresHumanApproval(proposal, policy)) score += 30;
 
-  // Higher impact = higher priority
-  const impact = data.impact_level;
-  if (impact === "critical") score += 25;
-  else if (impact === "high") score += 20;
-  else if (impact === "medium") score += 10;
+  if (risk.level === "critical") score += 25;
+  else if (risk.level === "high") score += 20;
+  else if (risk.level === "medium") score += 10;
 
-  // Lower confidence = more uncertain = more valuable to ask
-  const confidence = typeof data.confidence === "number" ? data.confidence : 0.5;
+  const confidence = typeof proposal.data.confidence === "number" ? proposal.data.confidence : 0.5;
   score += Math.round((1 - confidence) * 20);
 
-  // Has a question candidate ready
-  if (typeof data.question_candidate === "string") score += 5;
+  const payload = getProposalPayload(proposal);
+  if (typeof payload.statement === "string") score += 5;
 
   return score;
 }
 
-/** Generate a question from a proposal */
+function questionClassForProposal(proposal: ParsedObject): string {
+  const type = typeof proposal.data.type === "string" ? proposal.data.type : "";
+  const operation = proposalOperation(proposal);
+  const kind = proposalKind(proposal);
+
+  if (operation === "contradict" || type === "open_contradiction") return "contradiction_resolution";
+  if (type === "privacy_change") return "privacy_clarification";
+  if (kind === "value" || kind === "priority") return "value_arbitration";
+  if (kind === "identity_trait" || kind === "style_rule" || type === "identity_adjustment") {
+    return "identity_style_calibration";
+  }
+  return "factual_correction";
+}
+
+/** Generate a human-facing question from a structured proposal. */
 function proposalToQuestion(
   proposal: ParsedObject,
   questionId: string,
-  policy: PromotionPolicy,
 ): CurationQuestion {
-  const data = proposal.data;
-  const propId = typeof data.id === "string" ? data.id : "unknown";
-  const type = typeof data.type === "string" ? data.type : "new_fact";
-  const target = typeof data.target === "string" ? data.target : "";
-  const reason = typeof data.reason === "string" ? data.reason : "";
+  const payload = getProposalPayload(proposal);
+  const propId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
+  const operation = proposalOperation(proposal);
+  const kind = proposalKind(proposal).replaceAll("_", " ");
+  const statement = typeof payload.statement === "string" ? payload.statement : null;
+  const reason = typeof proposal.data.reason === "string" ? proposal.data.reason : "";
+  const targetLabel = proposalTargetLabel(proposal);
 
-  // Use question_candidate if available, otherwise generate from reason
-  const question = typeof data.question_candidate === "string"
-    ? data.question_candidate
-    : `Regarding: ${reason}`;
-
-  // Map proposal type to question class
-  let questionType = "factual_correction";
-  if (type.includes("value")) questionType = "value_arbitration";
-  else if (type.includes("identity") || type.includes("style")) questionType = "identity_style_calibration";
-  else if (type.includes("privacy")) questionType = "privacy_clarification";
-  else if (type.includes("contradiction")) questionType = "contradiction_resolution";
-
-  const isHighRisk = requiresHumanApproval(target, type, policy);
-  const priority = isHighRisk ? "high" : "medium";
+  let question = `Review ${targetLabel}: ${reason}`;
+  switch (operation) {
+    case "create":
+      question = statement
+        ? `Should I add this ${kind}: "${statement}"?`
+        : `Should I add a new ${kind} based on this proposal?`;
+      break;
+    case "confirm":
+      question = statement
+        ? `Please confirm ${targetLabel}: "${statement}".`
+        : `Please confirm ${targetLabel}.`;
+      break;
+    case "revise":
+      question = statement
+        ? `Should I revise ${targetLabel} to: "${statement}"?`
+        : `Should I revise ${targetLabel}?`;
+      break;
+    case "supersede":
+      question = statement
+        ? `Should I replace ${targetLabel} with: "${statement}"?`
+        : `Should I replace ${targetLabel} with the proposed update?`;
+      break;
+    case "deprecate":
+      question = `Should I deprecate ${targetLabel}? ${reason}`.trim();
+      break;
+    case "contradict": {
+      const relatedObjectId = typeof payload.related_object_id === "string"
+        ? payload.related_object_id
+        : "the linked memory";
+      question = `Do ${targetLabel} and ${relatedObjectId} contradict each other?`;
+      break;
+    }
+  }
 
   return {
     id: questionId,
-    type: questionType,
+    type: questionClassForProposal(proposal),
     question,
     proposal_refs: [propId],
-    priority,
+    priority: proposalPriority(proposal),
   };
 }
 
-/** Generate a daily curation packet from pending proposals */
+/** Generate a daily curation packet from pending proposals. */
 export function generateCurationPacket(
   store: ParsedStore,
   clock: Clock,
@@ -88,23 +158,19 @@ export function generateCurationPacket(
   owner: string = "owner",
   policy: PromotionPolicy = DEFAULT_POLICY,
 ): GeneratedPacket | null {
-  // Find pending proposals
   const pending = store.proposals.filter((p) => p.data.status === "pending");
   if (pending.length === 0) return null;
 
-  // Score and sort
   const scored = pending
-    .map((p) => ({ proposal: p, score: scoreProposal(p, policy) }))
+    .map((proposal) => ({ proposal, score: scoreProposal(proposal, policy) }))
     .sort((a, b) => b.score - a.score);
 
-  // Select top N
   const count = Math.min(scored.length, policy.defaultQuestionCount);
   const selected = scored.slice(0, count);
 
-  // Generate questions
   const questions: CurationQuestion[] = selected.map(({ proposal }) => {
     const qId = idGen.next("question");
-    return proposalToQuestion(proposal, qId, policy);
+    return proposalToQuestion(proposal, qId);
   });
 
   const packetId = idGen.next("curationPacket");
@@ -116,12 +182,12 @@ export function generateCurationPacket(
     created_at: ts,
     owner,
     question_count: questions.length,
-    questions: questions.map((q) => ({
-      id: q.id,
-      type: q.type,
-      question: q.question,
-      proposal_refs: q.proposal_refs,
-      priority: q.priority,
+    questions: questions.map((question) => ({
+      id: question.id,
+      type: question.type,
+      question: question.question,
+      proposal_refs: question.proposal_refs,
+      priority: question.priority,
     })),
   };
 

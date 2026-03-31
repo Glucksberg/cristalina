@@ -9,6 +9,7 @@ function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
     manifestFile: null,
     events: [],
     proposals: [],
+    curationPackets: [],
     coreObjects: [],
     contradictions: [],
     files: [],

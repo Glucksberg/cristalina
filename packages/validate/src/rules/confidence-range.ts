@@ -5,20 +5,21 @@ import type { ParsedStore, ParsedObject } from "../store/reader.js";
 
 const RULE = "confidence-range";
 
-/** Validate confidence values on canonical memory objects. */
+/** Validate confidence values on canonical memory objects and proposals. */
 export function confidenceRange(store: ParsedStore): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  for (const obj of store.coreObjects) {
+  for (const obj of [...store.proposals, ...store.coreObjects]) {
     const id = typeof obj.data.id === "string" ? obj.data.id : undefined;
     const confidence = obj.data.confidence;
 
-    // Canonical memory MUST have explicit confidence
+    const isCanonicalMemory = typeof obj.data.statement === "string";
+    const isProposal = typeof obj.data.operation === "string";
+
     if (confidence === undefined || confidence === null) {
-      // Only flag if this looks like a canonical object (has id + statement)
-      if (typeof obj.data.statement === "string") {
+      if (isCanonicalMemory || isProposal) {
         diagnostics.push(
-          error(`${RULE}/missing`, "Canonical memory object missing confidence", {
+          error(`${RULE}/missing`, "Object missing confidence", {
             file: obj.file,
             objectId: id,
           }),
@@ -48,7 +49,7 @@ export function confidenceRange(store: ParsedStore): Diagnostic[] {
       continue;
     }
 
-    // Advisory: check if confidence is sensible for the source type
+    // Advisory: only canonical memory currently carries source_type.
     const sourceType = obj.data.source_type;
     if (typeof sourceType === "string" && sourceType in INITIAL_CONFIDENCE_RANGES) {
       const range = INITIAL_CONFIDENCE_RANGES[sourceType as keyof typeof INITIAL_CONFIDENCE_RANGES];

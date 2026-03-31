@@ -202,7 +202,7 @@ signal detection
   -> question generation
   -> owner response
   -> semantic normalization
-  -> canonical operation (CONFIRM/REVISE/SUPERSEDE/etc.)
+  -> canonical operation plan (CREATE/CONFIRM/REVISE/SUPERSEDE/etc.)
   -> audit entry
   -> projection refresh
 ```

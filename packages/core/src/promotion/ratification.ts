@@ -1,5 +1,8 @@
+import type { ParsedObject } from "@cristalina/validate";
+import { MemoryObjectKind, PrivacyScope } from "@cristalina/types";
+import type { MemoryObjectKind as MemoryObjectKindType, PrivacyScope as PrivacyScopeType } from "@cristalina/types";
 import type { CristalinaStore } from "../store/store.js";
-import type { OperationResult } from "../operations/types.js";
+import type { OperationInput, OperationResult } from "../operations/types.js";
 import { executeOperation } from "../operations/index.js";
 
 export interface CurationResponse {
@@ -10,22 +13,277 @@ export interface CurationResponse {
 
 export interface RatificationInput {
   responses: CurationResponse[];
-  /** Map question_ref -> proposal ID to apply the response to */
+  /** Map question_ref -> proposal ID */
   questionToProposal: Map<string, string>;
-  /** Map question_ref -> target object ID (for CONFIRM/REVISE) */
-  questionToTarget: Map<string, string>;
-  /** File path where proposals are stored (for status updates) */
+  /** Deprecated compatibility field. Ratification now resolves targets from structured proposals. */
+  questionToTarget?: Map<string, string>;
+  /** Deprecated compatibility field. Proposal file paths are resolved from the parsed store. */
   proposalFilePath?: string;
+}
+
+export interface NormalizedDecision {
+  question_ref: string;
+  proposal_id: string;
+  answer_type: CurationResponse["answer_type"];
+  answer_text: string;
+  operation: string;
+  target_ref: Record<string, unknown>;
+  candidate_payload: Record<string, unknown>;
+}
+
+export interface CanonicalOperationPlan {
+  question_ref: string;
+  proposal_id: string;
+  operations: OperationInput[];
+  proposal_status: "applied" | "rejected" | "deferred" | "pending";
 }
 
 export interface RatificationResult {
   applied: OperationResult[];
   skipped: string[];
+  decisions: NormalizedDecision[];
+  plans: CanonicalOperationPlan[];
+}
+
+function getRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? value as Record<string, unknown> : null;
+}
+
+function buildSourceRef(questionRef: string): string {
+  return `curation/${questionRef}`;
+}
+
+function isMemoryObjectKind(value: unknown): value is MemoryObjectKindType {
+  return typeof value === "string" && MemoryObjectKind.options.includes(value as MemoryObjectKindType);
+}
+
+function isPrivacyScope(value: unknown): value is PrivacyScopeType {
+  return typeof value === "string" && PrivacyScope.options.includes(value as PrivacyScopeType);
+}
+
+function normalizeDecision(
+  proposal: ParsedObject,
+  response: CurationResponse,
+): NormalizedDecision {
+  const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
+  const operation = typeof proposal.data.operation === "string" ? proposal.data.operation : "create";
+  const targetRef = getRecord(proposal.data.target_ref) ?? {};
+  const candidatePayload = {
+    ...(getRecord(proposal.data.candidate_payload) ?? {}),
+  };
+
+  if (
+    response.answer_type === "edit"
+    && response.answer_text.trim().length > 0
+    && typeof candidatePayload.statement === "string"
+  ) {
+    candidatePayload.statement = response.answer_text.trim();
+  }
+
+  return {
+    question_ref: response.question_ref,
+    proposal_id: proposalId,
+    answer_type: response.answer_type,
+    answer_text: response.answer_text.trim(),
+    operation,
+    target_ref: targetRef,
+    candidate_payload: candidatePayload,
+  };
+}
+
+function buildOperationPlan(
+  proposal: ParsedObject,
+  decision: NormalizedDecision,
+): CanonicalOperationPlan {
+  const proposalId = decision.proposal_id;
+  const targetId = typeof decision.target_ref.object_id === "string"
+    ? decision.target_ref.object_id
+    : null;
+  const payload = decision.candidate_payload;
+  const kind = isMemoryObjectKind(payload.kind) ? payload.kind : "fact";
+  const statement = typeof payload.statement === "string" ? payload.statement : null;
+  const confidence = typeof proposal.data.confidence === "number" ? proposal.data.confidence : 0.75;
+  const privacyScope = isPrivacyScope(payload.privacy_scope)
+    ? payload.privacy_scope
+    : isPrivacyScope(proposal.data.privacy_scope)
+      ? proposal.data.privacy_scope
+      : null;
+  const sourceRef = buildSourceRef(decision.question_ref);
+  const reason = typeof proposal.data.reason === "string" ? proposal.data.reason : `Ratified ${proposalId}`;
+  const tags = Array.isArray(payload.tags) ? payload.tags.filter((tag): tag is string => typeof tag === "string") : undefined;
+  const relatedEntities = Array.isArray(payload.related_entities)
+    ? payload.related_entities.filter((entity): entity is string => typeof entity === "string")
+    : undefined;
+  const notes = typeof payload.notes === "string" ? payload.notes : undefined;
+
+  switch (decision.answer_type) {
+    case "reject":
+      return {
+        question_ref: decision.question_ref,
+        proposal_id: proposalId,
+        proposal_status: "rejected",
+        operations: [{
+          op: "LOG",
+          kind: "ratification_applied",
+          summary: `Rejected proposal ${proposalId}: ${decision.answer_text || reason}`,
+          source_type: "human_reply",
+          privacy_scope: "owner_private",
+          actor: "owner",
+        }],
+      };
+
+    case "defer":
+    case "uncertain":
+      return {
+        question_ref: decision.question_ref,
+        proposal_id: proposalId,
+        proposal_status: decision.answer_type === "defer" ? "deferred" : "pending",
+        operations: [{
+          op: "LOG",
+          kind: "ratification_applied",
+          summary: `${decision.answer_type} on proposal ${proposalId}: ${decision.answer_text || decision.question_ref}`,
+          source_type: "human_reply",
+          privacy_scope: "owner_private",
+          actor: "owner",
+        }],
+      };
+
+    case "accept":
+    case "edit":
+      break;
+  }
+
+  const operations: OperationInput[] = [];
+  switch (decision.operation) {
+    case "create":
+      if (!statement || !privacyScope) {
+        throw new Error(`Proposal ${proposalId} cannot create without statement and privacy_scope`);
+      }
+      operations.push({
+        op: "CREATE",
+        kind,
+        statement,
+        source_type: "human_reply",
+        source_ref: sourceRef,
+        confirmedBy: "owner",
+        confidence,
+        privacy_scope: privacyScope,
+        tags,
+        related_entities: relatedEntities,
+        notes,
+        authorized: true,
+      });
+      break;
+
+    case "confirm":
+      if (!targetId) throw new Error(`Proposal ${proposalId} cannot confirm without target_ref.object_id`);
+      operations.push({
+        op: "CONFIRM",
+        targetId,
+        confirmedBy: "owner",
+        authorized: true,
+      });
+      break;
+
+    case "revise":
+      if (!targetId || !statement) {
+        throw new Error(`Proposal ${proposalId} cannot revise without target_ref.object_id and statement`);
+      }
+      operations.push({
+        op: "REVISE",
+        targetId,
+        newStatement: statement,
+        reason,
+        source_type: "human_reply",
+        source_ref: sourceRef,
+        confirmedBy: "owner",
+        authorized: true,
+      });
+      break;
+
+    case "supersede":
+      if (!statement || !privacyScope) {
+        throw new Error(`Proposal ${proposalId} cannot supersede without statement and privacy_scope`);
+      }
+      if (targetId) {
+        operations.push({
+          op: "SUPERSEDE",
+          oldId: targetId,
+          newStatement: statement,
+          newKind: kind,
+          source_type: "human_reply",
+          source_ref: sourceRef,
+          confirmedBy: "owner",
+          confidence,
+          privacy_scope: privacyScope,
+          authorized: true,
+        });
+      } else {
+        operations.push({
+          op: "CREATE",
+          kind,
+          statement,
+          source_type: "human_reply",
+          source_ref: sourceRef,
+          confirmedBy: "owner",
+          confidence,
+          privacy_scope: privacyScope,
+          tags,
+          related_entities: relatedEntities,
+          notes,
+          authorized: true,
+        });
+      }
+      break;
+
+    case "deprecate":
+      if (!targetId) throw new Error(`Proposal ${proposalId} cannot deprecate without target_ref.object_id`);
+      operations.push({
+        op: "DEPRECATE",
+        targetId,
+        reason,
+        authorized: true,
+      });
+      break;
+
+    case "contradict": {
+      const relatedObjectId = typeof payload.related_object_id === "string"
+        ? payload.related_object_id
+        : null;
+      if (!targetId || !relatedObjectId) {
+        throw new Error(`Proposal ${proposalId} cannot contradict without both object references`);
+      }
+      operations.push({
+        op: "CONTRADICT",
+        leftId: targetId,
+        rightId: relatedObjectId,
+        reason,
+      });
+      break;
+    }
+
+    default:
+      throw new Error(`Unsupported proposal operation: ${decision.operation}`);
+  }
+
+  return {
+    question_ref: decision.question_ref,
+    proposal_id: proposalId,
+    proposal_status: "applied",
+    operations,
+  };
+}
+
+function updateProposalStatus(store: CristalinaStore, proposal: ParsedObject, status: CanonicalOperationPlan["proposal_status"]): void {
+  const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : null;
+  if (!proposalId) return;
+  store.updateYamlItem(proposal.file, proposalId, { status });
 }
 
 /**
  * Apply owner responses from a curation packet.
- * Each response dispatches to the appropriate operation.
+ * Responses are first normalized against the proposal contract, then turned into
+ * explicit operation plans, then executed and audited via the regular operation layer.
  */
 export async function applyRatification(
   store: CristalinaStore,
@@ -33,94 +291,35 @@ export async function applyRatification(
 ): Promise<RatificationResult> {
   const applied: OperationResult[] = [];
   const skipped: string[] = [];
+  const decisions: NormalizedDecision[] = [];
+  const plans: CanonicalOperationPlan[] = [];
 
   for (const response of input.responses) {
     const proposalId = input.questionToProposal.get(response.question_ref);
-    const targetId = input.questionToTarget.get(response.question_ref);
-
     if (!proposalId) {
       skipped.push(response.question_ref);
       continue;
     }
 
-    switch (response.answer_type) {
-      case "accept": {
-        if (targetId) {
-          // Confirm the existing target
-          const result = await executeOperation(store, {
-            op: "CONFIRM",
-            targetId,
-            confirmedBy: "owner",
-            authorized: true,
-          });
-          applied.push(result);
-        }
-        break;
-      }
-
-      case "edit": {
-        if (targetId) {
-          // Revise the existing target with the human's edited text
-          const result = await executeOperation(store, {
-            op: "REVISE",
-            targetId,
-            newStatement: response.answer_text,
-            reason: "Human edited via curation",
-            source_type: "human_reply",
-            source_ref: `curation/${response.question_ref}`,
-            confirmedBy: "owner",
-            authorized: true,
-          });
-          applied.push(result);
-        }
-        break;
-      }
-
-      case "reject": {
-        // Log the rejection as an event
-        const result = await executeOperation(store, {
-          op: "LOG",
-          kind: "ratification_applied",
-          summary: `Rejected proposal ${proposalId}: ${response.answer_text}`,
-          source_type: "human_reply",
-          privacy_scope: "owner_private",
-          actor: "owner",
-        });
-        applied.push(result);
-        break;
-      }
-
-      case "defer":
-      case "uncertain": {
-        // Log but don't change canonical state
-        const result = await executeOperation(store, {
-          op: "LOG",
-          kind: "ratification_applied",
-          summary: `${response.answer_type === "defer" ? "Deferred" : "Uncertain"} on proposal ${proposalId}`,
-          source_type: "human_reply",
-          privacy_scope: "owner_private",
-          actor: "owner",
-        });
-        applied.push(result);
-        break;
-      }
+    const proposal = await store.findById(proposalId);
+    if (!proposal) {
+      skipped.push(response.question_ref);
+      continue;
     }
 
-    // Update proposal status if we know the file path
-    if (input.proposalFilePath && proposalId) {
-      const statusMap: Record<string, string> = {
-        accept: "approved",
-        reject: "rejected",
-        edit: "approved",
-        defer: "deferred",
-        uncertain: "pending",
-      };
-      const newStatus = statusMap[response.answer_type];
-      if (newStatus) {
-        store.updateYamlItem(input.proposalFilePath, proposalId, { status: newStatus });
-      }
+    const decision = normalizeDecision(proposal, response);
+    const plan = buildOperationPlan(proposal, decision);
+
+    decisions.push(decision);
+    plans.push(plan);
+
+    for (const operation of plan.operations) {
+      const result = await executeOperation(store, operation);
+      applied.push(result);
     }
+
+    updateProposalStatus(store, proposal, plan.proposal_status);
   }
 
-  return { applied, skipped };
+  return { applied, skipped, decisions, plans };
 }

@@ -5,6 +5,7 @@ import type { OperationInput, StoreEffect, OperationResult, PlanResult } from ".
 import type { CristalinaStore } from "../store/store.js";
 import { planLog } from "./log.js";
 import { planPropose } from "./propose.js";
+import { planCreate } from "./create.js";
 import { planConfirm } from "./confirm.js";
 import { planRevise } from "./revise.js";
 import { planExtend } from "./extend.js";
@@ -25,6 +26,7 @@ export function planOperation(
   switch (input.op) {
     case "LOG":        return planLog(store, input, clock, idGen);
     case "PROPOSE":    return planPropose(store, input, clock, idGen);
+    case "CREATE":     return planCreate(store, input, clock, idGen);
     case "CONFIRM":    return planConfirm(store, input, clock, idGen);
     case "REVISE":     return planRevise(store, input, clock, idGen);
     case "EXTEND":     return planExtend(store, input, clock, idGen);

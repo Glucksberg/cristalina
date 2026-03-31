@@ -42,7 +42,12 @@ export async function lintStore(storePath: string, options?: LintOptions): Promi
   return {
     diagnostics,
     fileCount: store.files.length,
-    objectCount: store.events.length + store.proposals.length + store.coreObjects.length + store.contradictions.length,
+    objectCount:
+      store.events.length
+      + store.proposals.length
+      + store.curationPackets.length
+      + store.coreObjects.length
+      + store.contradictions.length,
     errorCount: diagnostics.filter((d) => d.severity === "error").length,
     warningCount: diagnostics.filter((d) => d.severity === "warning").length,
     infoCount: diagnostics.filter((d) => d.severity === "info").length,

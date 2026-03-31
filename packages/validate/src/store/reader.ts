@@ -25,6 +25,8 @@ export interface ParsedStore {
   events: ParsedObject[];
   /** All parsed proposals */
   proposals: ParsedObject[];
+  /** All parsed curation packets */
+  curationPackets: ParsedObject[];
   /** All parsed core memory objects (from core/ratified/, core/values/, etc.) */
   coreObjects: ParsedObject[];
   /** All parsed contradictions */
@@ -41,12 +43,24 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
   const parseErrors: Diagnostic[] = [];
   const events: ParsedObject[] = [];
   const proposals: ParsedObject[] = [];
+  const curationPackets: ParsedObject[] = [];
   const coreObjects: ParsedObject[] = [];
   const contradictions: ParsedObject[] = [];
 
   if (!existsSync(root)) {
     parseErrors.push(error("store/not-found", `Store directory not found: ${root}`));
-    return { root, manifest: null, manifestFile: null, events, proposals, coreObjects, contradictions, files: [], parseErrors };
+    return {
+      root,
+      manifest: null,
+      manifestFile: null,
+      events,
+      proposals,
+      curationPackets,
+      coreObjects,
+      contradictions,
+      files: [],
+      parseErrors,
+    };
   }
 
   // Discover all files
@@ -87,10 +101,15 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     }
   }
 
-  // Read proposals (YAML files in proposals/)
+  // Read proposals and curation packets (YAML files in proposals/)
   for (const file of files.filter((f) => f.startsWith("proposals/") && f.endsWith(".yaml"))) {
     const data = readYamlFile(resolve(root, file), file, parseErrors);
     if (data === null) continue;
+
+    if (looksLikeCurationPacket(data, file)) {
+      curationPackets.push({ data, file });
+      continue;
+    }
 
     // Extract individual proposals from items arrays, or store as single object
     if (data.items && Array.isArray(data.items)) {
@@ -138,7 +157,24 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     }
   }
 
-  return { root, manifest, manifestFile, events, proposals, coreObjects, contradictions, files, parseErrors };
+  return {
+    root,
+    manifest,
+    manifestFile,
+    events,
+    proposals,
+    curationPackets,
+    coreObjects,
+    contradictions,
+    files,
+    parseErrors,
+  };
+}
+
+function looksLikeCurationPacket(data: Record<string, unknown>, file: string): boolean {
+  if (file.includes("daily-curation")) return true;
+  if (typeof data.packet_id === "string") return true;
+  return Array.isArray(data.questions);
 }
 
 function readFileSafe(fullPath: string, relPath: string, errors: Diagnostic[]): string | null {

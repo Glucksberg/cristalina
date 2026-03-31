@@ -71,11 +71,21 @@ A Proposal is a structured candidate change to canonical memory.
 ```yaml
 id: prop-2026-03-29-001
 type: revise_preference
-target: core/preferences/communication.yaml#verbosity
+operation: supersede
+target_ref:
+  object_id: fact-001
+  kind: preference
+  facet: communication_style
+candidate_payload:
+  kind: preference
+  statement: "Use concise operational replies unless depth is requested."
+  privacy_scope: owner_private
+  tags: [communication, style]
 reason: "Recent sessions suggest concise operational mode is preferred."
-supporting_events:
-  - evt-2026-03-29-010
-  - evt-2026-03-29-011
+provenance:
+  supporting_events:
+    - evt-2026-03-29-010
+    - evt-2026-03-29-011
 confidence: 0.68
 status: pending
 privacy_scope: owner_private
@@ -84,11 +94,12 @@ privacy_scope: owner_private
 ### Recommended fields
 
 ```yaml
+policy_tags: [communication, preference]
+risk:
+  level: medium
+  requires_human_approval: true
 created_at: 2026-03-29T03:05:00Z
 created_by: agent
-impact_level: medium
-requires_human_approval: true
-question_candidate: "Do you still want concise answers during operational work?"
 ```
 
 ### Allowed `status` values
@@ -113,6 +124,15 @@ question_candidate: "Do you still want concise answers during operational work?"
 - `supersede_memory`
 - `deprecate_memory`
 - `open_contradiction`
+
+### Allowed `operation` values
+
+- `create`
+- `confirm`
+- `revise`
+- `supersede`
+- `deprecate`
+- `contradict`
 
 ---
 

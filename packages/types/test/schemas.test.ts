@@ -55,12 +55,27 @@ describe("ProposalSchema", () => {
     const result = ProposalSchema.safeParse({
       id: "prop-001",
       type: "new_fact",
-      target: "core/ratified/facts.yaml",
+      operation: "create",
+      target_ref: {
+        kind: "fact",
+        facet: "working_preferences",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "User prefers concise operational replies.",
+        privacy_scope: "owner_private",
+      },
       reason: "Test proposal",
-      supporting_events: ["evt-001"],
+      provenance: {
+        supporting_events: ["evt-001"],
+      },
       confidence: 0.68,
       status: "pending",
       privacy_scope: "owner_private",
+      risk: {
+        level: "medium",
+        requires_human_approval: true,
+      },
     });
     expect(result.success).toBe(true);
   });
@@ -70,9 +85,15 @@ describe("ProposalSchema", () => {
     const badResult = ProposalSchema.safeParse({
       id: "prop-001",
       type: "new_fact",
-      target: "test",
+      operation: "create",
+      target_ref: { kind: "fact" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "test",
+        privacy_scope: "owner_private",
+      },
       reason: "test",
-      supporting_events: [],
+      provenance: { supporting_events: [] },
       confidence: 0.5,
       status: "accepted",
       privacy_scope: "owner_private",
@@ -83,14 +104,40 @@ describe("ProposalSchema", () => {
     const goodResult = ProposalSchema.safeParse({
       id: "prop-001",
       type: "new_fact",
-      target: "test",
+      operation: "create",
+      target_ref: { kind: "fact" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "test",
+        privacy_scope: "owner_private",
+      },
       reason: "test",
-      supporting_events: [],
+      provenance: { supporting_events: [] },
       confidence: 0.5,
       status: "approved",
       privacy_scope: "owner_private",
     });
     expect(goodResult.success).toBe(true);
+  });
+
+  it("requires object_id for non-create operations", () => {
+    const result = ProposalSchema.safeParse({
+      id: "prop-001",
+      type: "revise_fact",
+      operation: "revise",
+      target_ref: { kind: "fact" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Updated statement",
+        privacy_scope: "owner_private",
+      },
+      reason: "test",
+      provenance: { supporting_events: ["evt-001"] },
+      confidence: 0.7,
+      status: "pending",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(false);
   });
 });
 

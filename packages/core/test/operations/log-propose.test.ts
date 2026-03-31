@@ -79,12 +79,28 @@ describe("PROPOSE operation", () => {
     const result = await executeOperation(store, {
       op: "PROPOSE",
       type: "revise_preference",
-      target: "core/preferences/communication.yaml#verbosity",
+      operation: "supersede",
+      target_ref: {
+        object_id: "fact-pref-001",
+        kind: "preference",
+        facet: "communication_style",
+      },
+      candidate_payload: {
+        kind: "preference",
+        statement: "Use concise answers during operational work.",
+        privacy_scope: "owner_private",
+        tags: ["communication", "style"],
+      },
       reason: "Recent sessions suggest concise mode is preferred.",
-      supporting_events: ["evt-test-001"],
+      provenance: {
+        supporting_events: ["evt-test-001"],
+      },
       confidence: 0.68,
       privacy_scope: "owner_private",
-      impact_level: "medium",
+      risk: {
+        level: "medium",
+        requires_human_approval: true,
+      },
     });
 
     expect(result.operation).toBe("PROPOSE");
@@ -93,6 +109,7 @@ describe("PROPOSE operation", () => {
     const snapshot = await store.read();
     expect(snapshot.proposals).toHaveLength(1);
     expect(snapshot.proposals[0].data.type).toBe("revise_preference");
+    expect(snapshot.proposals[0].data.operation).toBe("supersede");
     expect(snapshot.proposals[0].data.status).toBe("pending");
   });
 
@@ -100,9 +117,20 @@ describe("PROPOSE operation", () => {
     await executeOperation(store, {
       op: "PROPOSE",
       type: "new_fact",
-      target: "core/ratified/facts.yaml",
+      operation: "create",
+      target_ref: {
+        kind: "fact",
+        facet: "working_style",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "New observation.",
+        privacy_scope: "owner_private",
+      },
       reason: "New observation.",
-      supporting_events: [],
+      provenance: {
+        supporting_events: [],
+      },
       confidence: 0.5,
       privacy_scope: "owner_private",
     });

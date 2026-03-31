@@ -92,6 +92,7 @@ export type ContradictionStatus = z.infer<typeof ContradictionStatus>;
 export const MemoryOperation = z.enum([
   "LOG",
   "PROPOSE",
+  "CREATE",
   "CONFIRM",
   "REVISE",
   "EXTEND",
@@ -134,6 +135,18 @@ export const ProposalType = z.enum([
   "open_contradiction",
 ]);
 export type ProposalType = z.infer<typeof ProposalType>;
+
+// --- Proposal Operation (ARCHITECTURE-V2.md §5-6) ---
+
+export const ProposalOperation = z.enum([
+  "create",
+  "confirm",
+  "revise",
+  "supersede",
+  "deprecate",
+  "contradict",
+]);
+export type ProposalOperation = z.infer<typeof ProposalOperation>;
 
 // --- Question Class (CURATION-PROTOCOL.md §5) ---
 

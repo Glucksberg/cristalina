@@ -310,6 +310,7 @@ Cristalina defines the following operations:
 
 - `LOG`
 - `PROPOSE`
+- `CREATE`
 - `CONFIRM`
 - `REVISE`
 - `EXTEND`
@@ -354,7 +355,19 @@ The owner SHOULD be able to:
 - defer
 - mark uncertain
 
-### 12.4 High-risk classes
+### 12.4 Ratification semantics
+Owner responses SHOULD be normalized into an explicit operation plan before touching canonical state.
+
+The canonical result of `accept` or `edit` depends on the proposal's declared operation and may become:
+
+- `CREATE`
+- `CONFIRM`
+- `REVISE`
+- `SUPERSEDE`
+- `DEPRECATE`
+- `CONTRADICT`
+
+### 12.5 High-risk classes
 Updates affecting the following MUST require human approval:
 
 - values

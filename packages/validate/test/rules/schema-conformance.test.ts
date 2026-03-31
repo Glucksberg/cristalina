@@ -5,7 +5,7 @@ import type { ParsedStore } from "../../src/store/reader.js";
 function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
   return {
     root: "/test", manifest: null, manifestFile: null,
-    events: [], proposals: [], coreObjects: [], contradictions: [],
+    events: [], proposals: [], curationPackets: [], coreObjects: [], contradictions: [],
     files: [], parseErrors: [], ...overrides,
   };
 }
@@ -31,6 +31,55 @@ describe("schemaConformance rule", () => {
     const diags = schemaConformance(store);
     expect(diags.length).toBeGreaterThan(0);
     expect(diags.every((d) => d.rule === "schema-conformance/event")).toBe(true);
+  });
+
+  it("valid proposal passes", () => {
+    const store = makeStore({
+      proposals: [{
+        data: {
+          id: "prop-001",
+          type: "new_fact",
+          operation: "create",
+          target_ref: { kind: "fact", facet: "working_style" },
+          candidate_payload: {
+            kind: "fact",
+            statement: "User prefers concise replies.",
+            privacy_scope: "owner_private",
+          },
+          reason: "Grounded by recent interactions",
+          provenance: { supporting_events: ["evt-001"] },
+          confidence: 0.7,
+          status: "pending",
+          privacy_scope: "owner_private",
+        },
+        file: "proposals/2026-03/pending-updates.yaml",
+        index: 0,
+      }],
+    });
+    expect(schemaConformance(store)).toHaveLength(0);
+  });
+
+  it("invalid proposal reports errors", () => {
+    const store = makeStore({
+      proposals: [{
+        data: {
+          id: "prop-001",
+          type: "revise_fact",
+          operation: "revise",
+          target_ref: { kind: "fact" },
+          candidate_payload: { kind: "fact", privacy_scope: "owner_private" },
+          reason: "Missing required fields",
+          provenance: { supporting_events: [] },
+          confidence: 1.2,
+          status: "pending",
+          privacy_scope: "owner_private",
+        },
+        file: "proposals/2026-03/pending-updates.yaml",
+        index: 0,
+      }],
+    });
+    const diags = schemaConformance(store);
+    expect(diags.some((d) => d.rule === "schema-conformance/proposal")).toBe(true);
   });
 
   it("valid memory object passes", () => {

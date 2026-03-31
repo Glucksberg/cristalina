@@ -1,4 +1,15 @@
-import type { MemoryOperation, PrivacyScope, SourceType, MemoryObjectKind, MemoryStatus, ProposalType, ProposalStatus } from "@cristalina/types";
+import type {
+  MemoryOperation,
+  PrivacyScope,
+  SourceType,
+  MemoryObjectKind,
+  ProposalType,
+  ProposalOperation,
+  ProposalTargetRef,
+  ProposalCandidatePayload,
+  ProposalRisk,
+  ProposalProvenance,
+} from "@cristalina/types";
 
 /** Describes a side effect to be applied to the store */
 export type StoreEffect =
@@ -56,15 +67,31 @@ export interface LogInput {
 export interface ProposeInput {
   op: "PROPOSE";
   type: ProposalType;
-  target: string;
+  operation: ProposalOperation;
+  target_ref: ProposalTargetRef;
+  candidate_payload: ProposalCandidatePayload;
   reason: string;
-  supporting_events: string[];
+  provenance: ProposalProvenance;
   confidence: number;
   privacy_scope: PrivacyScope;
   actor?: string;
-  impact_level?: "low" | "medium" | "high" | "critical";
-  requires_human_approval?: boolean;
-  question_candidate?: string;
+  policy_tags?: string[];
+  risk?: ProposalRisk;
+}
+
+export interface CreateInput {
+  op: "CREATE";
+  kind: MemoryObjectKind;
+  statement: string;
+  source_type: SourceType;
+  source_ref: string;
+  confirmedBy: string;
+  confidence: number;
+  privacy_scope: PrivacyScope;
+  tags?: string[];
+  related_entities?: string[];
+  notes?: string;
+  authorized?: boolean;
 }
 
 export interface ConfirmInput {
@@ -137,6 +164,7 @@ export interface ArchiveInput {
 export type OperationInput =
   | LogInput
   | ProposeInput
+  | CreateInput
   | ConfirmInput
   | ReviseInput
   | ExtendInput
