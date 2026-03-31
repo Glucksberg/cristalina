@@ -249,6 +249,37 @@ describe("Authority enforcement (B3)", () => {
     expect(result.operation).toBe("CONFIRM");
   });
 
+  it("CONFIRM on high-risk kind succeeds for owner in trusted private channel", async () => {
+    seedValueObject("val-auth-001");
+    const result = await executeOperation(store, {
+      op: "CONFIRM",
+      targetId: "val-auth-001",
+      confirmedBy: "owner",
+      authority: {
+        actor_id: "owner",
+        actor_role: "owner",
+        channel: "owner_private_dm",
+      },
+    });
+    expect(result.operation).toBe("CONFIRM");
+  });
+
+  it("CONFIRM on high-risk kind rejects owner in group channel without explicit authorization", async () => {
+    seedValueObject("val-auth-001");
+    await expect(
+      executeOperation(store, {
+        op: "CONFIRM",
+        targetId: "val-auth-001",
+        confirmedBy: "owner",
+        authority: {
+          actor_id: "owner",
+          actor_role: "owner",
+          channel: "group_channel",
+        },
+      }),
+    ).rejects.toThrow("trusted private channel");
+  });
+
   it("REVISE on high-risk kind requires authorized", async () => {
     seedValueObject("val-auth-001");
     await expect(
@@ -259,11 +290,46 @@ describe("Authority enforcement (B3)", () => {
     ).rejects.toThrow("requires authorization");
   });
 
+  it("REVISE on high-risk kind succeeds for owner in project-private workspace", async () => {
+    seedValueObject("val-auth-001");
+    const result = await executeOperation(store, {
+      op: "REVISE",
+      targetId: "val-auth-001",
+      newStatement: "new",
+      reason: "test",
+      source_type: "human_reply",
+      source_ref: "q-1",
+      confirmedBy: "owner",
+      authority: {
+        actor_id: "owner",
+        actor_role: "owner",
+        channel: "project_private_workspace",
+      },
+    });
+    expect(result.operation).toBe("REVISE");
+  });
+
   it("DEPRECATE on high-risk kind requires authorized", async () => {
     seedValueObject("val-auth-001");
     await expect(
       executeOperation(store, { op: "DEPRECATE", targetId: "val-auth-001", reason: "test" }),
     ).rejects.toThrow("requires authorization");
+  });
+
+  it("DEPRECATE records authority actor when explicitly provided", async () => {
+    seedValueObject("val-auth-001");
+    const result = await executeOperation(store, {
+      op: "DEPRECATE",
+      targetId: "val-auth-001",
+      reason: "test",
+      authority: {
+        actor_id: "owner",
+        actor_role: "owner",
+        channel: "owner_private_dm",
+        authorized: true,
+      },
+    });
+    expect(result.auditEntry.actor).toBe("owner");
   });
 });
 

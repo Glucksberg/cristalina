@@ -10,6 +10,15 @@ export {
   type DeprecateInput, type CrystallizeInput, type ArchiveInput,
 } from "./operations/types.js";
 export { executeOperation, planOperation, applyEffects } from "./operations/index.js";
+export {
+  type AuthorityActorRole,
+  type OperationAuthorityContext,
+  type OperationAuthorityRequest,
+  type AuthorityDecision,
+  evaluateAuthority,
+  enforceAuthority,
+  resolveAuthorityContext,
+} from "./operations/authority.js";
 
 // Promotion
 export { generateCurationPacket, type GeneratedPacket } from "./promotion/curation.js";

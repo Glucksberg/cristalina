@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { DeprecateInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 export function planDeprecate(
   store: ParsedStore,
@@ -20,7 +20,13 @@ export function planDeprecate(
   }
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
-  enforceAuthority(kind, input.targetId, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized);
+  enforceAuthority({
+    operation: "DEPRECATE",
+    kind,
+    targetId: input.targetId,
+    authority,
+  });
 
   const ts = clock.isoNow();
 
@@ -36,7 +42,7 @@ export function planDeprecate(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "DEPRECATE",
-    actor: "agent",
+    actor: actorForAudit(authority, "agent"),
     targets: [input.targetId],
     produced: [],
     provenance: `deprecate/${input.reason}`,

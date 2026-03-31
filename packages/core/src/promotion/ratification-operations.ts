@@ -65,6 +65,14 @@ interface RatificationOperationHandler {
   buildOperations(context: PlanningContext): OperationInput[];
 }
 
+const OWNER_RATIFICATION_AUTHORITY = {
+  actor_id: "owner",
+  actor_role: "owner",
+  runtime: "curation",
+  channel: "owner_private_dm",
+  authorized: true,
+} as const;
+
 function getRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null ? value as Record<string, unknown> : null;
 }
@@ -252,6 +260,7 @@ function buildCreateOperation(context: PlanningContext): OperationInput {
     tags: context.tags,
     related_entities: context.relatedEntities,
     notes: context.notes,
+    authority: OWNER_RATIFICATION_AUTHORITY,
     authorized: true,
   };
 }
@@ -283,6 +292,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         op: "CONFIRM",
         targetId: context.targetId,
         confirmedBy: "owner",
+        authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
       }];
     },
@@ -302,6 +312,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         source_type: "human_reply",
         source_ref: context.sourceRef,
         confirmedBy: "owner",
+        authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
       }];
     },
@@ -327,6 +338,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         confirmedBy: "owner",
         confidence: context.confidence,
         privacy_scope: context.privacyScope,
+        authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
       }];
     },
@@ -342,6 +354,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         op: "DEPRECATE",
         targetId: context.targetId,
         reason: context.reason,
+        authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
       }];
     },

@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ReviseInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 export function planRevise(
   store: ParsedStore,
@@ -23,7 +23,13 @@ export function planRevise(
   }
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
-  enforceAuthority(kind, input.targetId, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  enforceAuthority({
+    operation: "REVISE",
+    kind,
+    targetId: input.targetId,
+    authority,
+  });
 
   const ts = clock.isoNow();
 
@@ -42,7 +48,7 @@ export function planRevise(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "REVISE",
-    actor: input.confirmedBy,
+    actor: actorForAudit(authority, input.confirmedBy),
     targets: [input.targetId],
     produced: [],
     provenance: `revise/${input.source_ref}`,

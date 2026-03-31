@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator, PrefixKey } from "../id/generator.js";
 import type { CreateInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 const KIND_TO_PREFIX: Record<string, PrefixKey> = {
   fact: "fact",
@@ -24,7 +24,13 @@ export function planCreate(
   clock: Clock,
   idGen: IdGenerator,
 ): PlanResult {
-  enforceAuthority(input.kind, `${input.kind}:new`, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  enforceAuthority({
+    operation: "CREATE",
+    kind: input.kind,
+    targetId: `${input.kind}:new`,
+    authority,
+  });
 
   const ts = clock.isoNow();
   const newId = idGen.next(KIND_TO_PREFIX[input.kind] ?? "fact");
@@ -59,7 +65,7 @@ export function planCreate(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "CREATE",
-    actor: input.confirmedBy,
+    actor: actorForAudit(authority, input.confirmedBy),
     targets: [],
     produced: [newId],
     provenance: `create/${input.source_ref}`,

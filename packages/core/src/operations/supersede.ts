@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator, PrefixKey } from "../id/generator.js";
 import type { SupersedeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 const KIND_TO_PREFIX: Record<string, PrefixKey> = {
   fact: "fact", preference: "fact", constraint: "fact", project: "fact", belief: "fact",
@@ -23,7 +23,13 @@ export function planSupersede(
   if (!old) throw new Error(`Object not found: ${input.oldId}`);
 
   const oldKind = typeof old.data.kind === "string" ? old.data.kind : "fact";
-  enforceAuthority(oldKind, input.oldId, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  enforceAuthority({
+    operation: "SUPERSEDE",
+    kind: oldKind,
+    targetId: input.oldId,
+    authority,
+  });
 
   const ts = clock.isoNow();
   const newKind = input.newKind ?? oldKind;
@@ -64,7 +70,7 @@ export function planSupersede(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "SUPERSEDE",
-    actor: input.confirmedBy,
+    actor: actorForAudit(authority, input.confirmedBy),
     targets: [input.oldId],
     produced: [newId],
     provenance: `supersede/${input.source_ref}`,

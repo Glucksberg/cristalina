@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ConfirmInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 export function planConfirm(
   store: ParsedStore,
@@ -15,7 +15,13 @@ export function planConfirm(
   if (!target) throw new Error(`Object not found: ${input.targetId}`);
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
-  enforceAuthority(kind, input.targetId, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  enforceAuthority({
+    operation: "CONFIRM",
+    kind,
+    targetId: input.targetId,
+    authority,
+  });
 
   const ts = clock.isoNow();
   const oldConfidence = typeof target.data.confidence === "number" ? target.data.confidence : 0;
@@ -37,7 +43,7 @@ export function planConfirm(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "CONFIRM",
-    actor: input.confirmedBy,
+    actor: actorForAudit(authority, input.confirmedBy),
     targets: [input.targetId],
     produced: [],
     provenance: `confirm/${input.confirmedBy}`,

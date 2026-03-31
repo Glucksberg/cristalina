@@ -3,7 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { CrystallizeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
-import { enforceAuthority } from "./authority.js";
+import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
 
 export function planCrystallize(
   store: ParsedStore,
@@ -15,7 +15,13 @@ export function planCrystallize(
   if (!target) throw new Error(`Object not found: ${input.targetId}`);
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
-  enforceAuthority(kind, input.targetId, input.authorized);
+  const authority = resolveAuthorityContext(input.authority, input.authorized);
+  enforceAuthority({
+    operation: "CRYSTALLIZE",
+    kind,
+    targetId: input.targetId,
+    authority,
+  });
 
   const confidence = typeof target.data.confidence === "number" ? target.data.confidence : 0;
   if (confidence < 0.95) {
@@ -45,7 +51,7 @@ export function planCrystallize(
   const auditEntry: AuditEntry = {
     timestamp: ts,
     operation: "CRYSTALLIZE",
-    actor: "system",
+    actor: actorForAudit(authority, "system"),
     targets: [input.targetId],
     produced: [],
     provenance: `crystallize/confidence=${confidence}`,

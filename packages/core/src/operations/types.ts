@@ -10,6 +10,7 @@ import type {
   ProposalRisk,
   ProposalProvenance,
 } from "@cristalina/types";
+import type { OperationAuthorityContext } from "./authority.js";
 
 /** Describes a side effect to be applied to the store */
 export type StoreEffect =
@@ -91,6 +92,7 @@ export interface CreateInput {
   tags?: string[];
   related_entities?: string[];
   notes?: string;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
@@ -99,6 +101,7 @@ export interface ConfirmInput {
   targetId: string;
   confirmedBy: string;
   newConfidence?: number;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
@@ -110,6 +113,7 @@ export interface ReviseInput {
   source_type: SourceType;
   source_ref: string;
   confirmedBy: string;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
@@ -138,6 +142,7 @@ export interface SupersedeInput {
   confirmedBy: string;
   confidence: number;
   privacy_scope: PrivacyScope;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
@@ -146,12 +151,14 @@ export interface DeprecateInput {
   targetId: string;
   reason: string;
   supersededBy?: string;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
 export interface CrystallizeInput {
   op: "CRYSTALLIZE";
   targetId: string;
+  authority?: OperationAuthorityContext;
   authorized?: boolean;
 }
 
