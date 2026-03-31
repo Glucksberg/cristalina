@@ -21,6 +21,7 @@ export {
   approvalReasonsForProposal,
   getProposalPolicyTags,
   getSupportingEvents,
+  privacyAudienceExpansionForProposal,
   supportingEventCount,
 } from "./promotion/policy.js";
 export {

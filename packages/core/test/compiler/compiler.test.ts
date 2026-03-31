@@ -75,17 +75,26 @@ describe("scoring", () => {
     expect(assignTier(obj, score)).toBe("hot");
   });
 
-  it("filters by audience scope — agent_operational sees itself and more public", () => {
+  it("filters by audience matrix - agent_operational sees operational and outward scopes only", () => {
     const objects: ParsedObject[] = [
       { data: { id: "a", privacy_scope: "owner_private" }, file: "test" },
       { data: { id: "b", privacy_scope: "public_safe" }, file: "test" },
       { data: { id: "c", privacy_scope: "agent_operational" }, file: "test" },
+      { data: { id: "p", privacy_scope: "project_private" }, file: "test" },
       { data: { id: "d", privacy_scope: "shareable" }, file: "test" },
     ];
     const filtered = filterByAudience(objects, "agent_operational");
-    // agent_operational(1) sees: agent_operational(1), project_private(2), shareable(3), public_safe(4)
-    // Does NOT see: owner_private(0)
     expect(filtered.map((o) => o.data.id)).toEqual(["b", "c", "d"]);
+  });
+
+  it("project_private audience does not automatically see agent_operational objects", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "a", privacy_scope: "agent_operational" }, file: "test" },
+      { data: { id: "b", privacy_scope: "project_private" }, file: "test" },
+      { data: { id: "c", privacy_scope: "shareable" }, file: "test" },
+    ];
+    const filtered = filterByAudience(objects, "project_private");
+    expect(filtered.map((o) => o.data.id)).toEqual(["b", "c"]);
   });
 
   it("owner_private audience sees everything", () => {
@@ -141,14 +150,12 @@ describe("compile", () => {
     expect(result.hot).toContain("Honesty above pleasing.");
     expect(result.metadata.hot_count).toBeGreaterThan(0);
 
-    // Verify files were written
     expect(existsSync(resolve(root, "compiled/hot/session-pack.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/SOUL.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/VALUE.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/USER.md"))).toBe(true);
     expect(existsSync(resolve(root, "compiled/bootstrap/MEMORY.md"))).toBe(true);
 
-    // Verify bootstrap content
     const soul = readFileSync(resolve(root, "compiled/bootstrap/SOUL.md"), "utf-8");
     expect(soul).toContain("Long-term technical companion.");
   });
@@ -164,7 +171,6 @@ describe("compile", () => {
     });
 
     const result = await compile(store, { audience: "public_safe" });
-    // public_safe audience should ONLY see public_safe objects, NOT owner_private
     expect(result.bootstrap.memory).toContain("Public fact.");
     expect(result.bootstrap.memory).not.toContain("Private secret.");
   });

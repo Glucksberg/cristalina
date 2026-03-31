@@ -59,7 +59,7 @@ export async function applyRatification(
     const targetObject = targetObjectId ? await store.findById(targetObjectId) : null;
 
     const decision = normalizeDecision(proposal, response, targetObject);
-    const plan = buildOperationPlan(proposal, decision);
+    const plan = buildOperationPlan(proposal, decision, targetObject);
 
     decisions.push(decision);
     plans.push(plan);

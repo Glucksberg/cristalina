@@ -9,7 +9,9 @@ import {
   MemoryStatus,
   ProposalStatus,
   EventKind,
+  canAudienceAccessScope,
   isScopeEscalation,
+  newlyVisibleAudiences,
 } from "../src/index.js";
 
 describe("EventSchema", () => {
@@ -81,7 +83,6 @@ describe("ProposalSchema", () => {
   });
 
   it("uses the correct status enum (not the old one)", () => {
-    // "accepted" was in the old broken schema — should now be "approved"
     const badResult = ProposalSchema.safeParse({
       id: "prop-001",
       type: "new_fact",
@@ -100,7 +101,6 @@ describe("ProposalSchema", () => {
     });
     expect(badResult.success).toBe(false);
 
-    // "approved" is the correct value
     const goodResult = ProposalSchema.safeParse({
       id: "prop-001",
       type: "new_fact",
@@ -173,7 +173,6 @@ describe("MemoryObjectSchema", () => {
       status: "ratified",
       confidence: 0.9,
       privacy_scope: "owner_private",
-      // Missing: source_type, source_ref, created_at, etc.
     });
     expect(result.success).toBe(false);
   });
@@ -205,5 +204,23 @@ describe("isScopeEscalation", () => {
 
   it("does not flag de-escalation", () => {
     expect(isScopeEscalation("public_safe", "owner_private")).toBe(false);
+  });
+
+  it("flags cross-branch exposure when a new audience is introduced", () => {
+    expect(isScopeEscalation("agent_operational", "project_private")).toBe(true);
+    expect(newlyVisibleAudiences("agent_operational", "project_private")).toEqual(["project_private"]);
+  });
+});
+
+describe("canAudienceAccessScope", () => {
+  it("does not treat agent_operational and project_private as interchangeable", () => {
+    expect(canAudienceAccessScope("agent_operational", "project_private")).toBe(false);
+    expect(canAudienceAccessScope("project_private", "agent_operational")).toBe(false);
+  });
+
+  it("allows outward-safe scopes across internal audiences", () => {
+    expect(canAudienceAccessScope("agent_operational", "shareable")).toBe(true);
+    expect(canAudienceAccessScope("project_private", "shareable")).toBe(true);
+    expect(canAudienceAccessScope("public_safe", "shareable")).toBe(false);
   });
 });

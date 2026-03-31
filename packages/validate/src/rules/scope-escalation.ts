@@ -1,4 +1,4 @@
-import { PrivacyScope, isScopeEscalation } from "@cristalina/types";
+import { PrivacyScope, isScopeEscalation, newlyVisibleAudiences } from "@cristalina/types";
 import type { Diagnostic } from "../diagnostics.js";
 import { error } from "../diagnostics.js";
 import type { ParsedStore } from "../store/reader.js";
@@ -38,13 +38,14 @@ export function scopeEscalation(store: ParsedStore): Diagnostic[] {
       if (!oldScope) continue;
 
       if (isScopeEscalation(oldScope, currentScope as PrivacyScope)) {
+        const introducedAudiences = newlyVisibleAudiences(oldScope, currentScope as PrivacyScope);
         // Check if this was human-approved (source_type = human_reply or human_message)
         const sourceType = obj.data.source_type;
         if (sourceType !== "human_reply" && sourceType !== "human_message") {
           diagnostics.push(
             error(
               `${RULE}/automatic`,
-              `Scope escalation from "${oldScope}" to "${currentScope}" without human approval (source: ${sourceType})`,
+              `Scope escalation from "${oldScope}" to "${currentScope}" exposes new audiences (${introducedAudiences.join(", ")}) without human approval (source: ${sourceType})`,
               { file: obj.file, objectId: id },
             ),
           );

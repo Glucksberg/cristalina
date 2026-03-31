@@ -1,5 +1,5 @@
 import type { ParsedObject } from "@cristalina/validate";
-import { scopeLevel, type PrivacyScope } from "@cristalina/types";
+import { canAudienceAccessScope, type PrivacyScope } from "@cristalina/types";
 
 export interface ScoredObject {
   object: ParsedObject;
@@ -62,14 +62,12 @@ export function assignTier(obj: ParsedObject, score: number): "hot" | "warm" | "
 
 /**
  * Filter objects by audience privacy scope.
- * An object is visible if its scope is at least as public as the audience.
- * owner_private(0) audience sees everything; public_safe(4) only sees public_safe.
+ * Visibility is governed by an explicit audience matrix, not a linear scope ladder.
  */
 export function filterByAudience(objects: ParsedObject[], audience: PrivacyScope): ParsedObject[] {
-  const audienceLevel = scopeLevel(audience);
   return objects.filter((obj) => {
     const scope = obj.data.privacy_scope;
     if (typeof scope !== "string") return false;
-    return scopeLevel(scope as PrivacyScope) >= audienceLevel;
+    return canAudienceAccessScope(audience, scope as PrivacyScope);
   });
 }

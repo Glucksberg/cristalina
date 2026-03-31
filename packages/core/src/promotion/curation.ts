@@ -45,12 +45,16 @@ function proposalOperation(proposal: ParsedObject): string {
   return typeof proposal.data.operation === "string" ? proposal.data.operation : "create";
 }
 
-function proposalPriority(proposal: ParsedObject): "low" | "medium" | "high" | "critical" {
+function proposalPriority(
+  proposal: ParsedObject,
+  policy: PromotionPolicy,
+  targetObject: ParsedObject | null = null,
+): "low" | "medium" | "high" | "critical" {
   const risk = getRisk(proposal);
   if (risk.level === "critical" || risk.level === "high" || risk.level === "medium" || risk.level === "low") {
     return risk.level;
   }
-  if (requiresHumanApproval(proposal)) return "high";
+  if (requiresHumanApproval(proposal, policy, targetObject)) return "high";
   return "medium";
 }
 
@@ -62,15 +66,24 @@ function proposalTargetLabel(proposal: ParsedObject): string {
   return "memory";
 }
 
+function findTargetObject(store: ParsedStore, proposal: ParsedObject): ParsedObject | null {
+  const targetRef = getProposalTargetRef(proposal);
+  if (typeof targetRef.object_id !== "string") return null;
+  return store.coreObjects.find((obj) => obj.data.id === targetRef.object_id) ?? null;
+}
+
 /** Score a proposal for curation priority. */
-function scoreProposal(proposal: ParsedObject, policy: PromotionPolicy): number {
+function scoreProposal(store: ParsedStore, proposal: ParsedObject, policy: PromotionPolicy): number {
   let score = 0;
   const risk = getRisk(proposal);
-  const approvalReasons = approvalReasonsForProposal(proposal, policy);
+  const targetObject = findTargetObject(store, proposal);
+  const approvalReasons = approvalReasonsForProposal(proposal, policy, targetObject);
 
-  if (requiresHumanApproval(proposal, policy)) score += 30;
+  if (requiresHumanApproval(proposal, policy, targetObject)) score += 30;
   if (approvalReasons.includes("thin_provenance")) score += 10;
   score += approvalReasons.filter((reason) => reason.startsWith("sensitive_policy_tag:")).length * 5;
+  score += approvalReasons.filter((reason) => reason.startsWith("privacy_audience_expansion:")).length * 8;
+  score += approvalReasons.filter((reason) => reason.startsWith("outward_visibility:")).length * 6;
 
   if (risk.level === "critical") score += 25;
   else if (risk.level === "high") score += 20;
@@ -96,6 +109,8 @@ function questionClassForProposal(proposal: ParsedObject): string {
 function proposalToQuestion(
   proposal: ParsedObject,
   questionId: string,
+  policy: PromotionPolicy,
+  targetObject: ParsedObject | null = null,
 ): CurationQuestion {
   const payload = getProposalPayload(proposal);
   const propId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
@@ -144,7 +159,7 @@ function proposalToQuestion(
     type: questionClassForProposal(proposal),
     question,
     proposal_refs: [propId],
-    priority: proposalPriority(proposal),
+    priority: proposalPriority(proposal, policy, targetObject),
   };
 }
 
@@ -160,7 +175,7 @@ export function generateCurationPacket(
   if (pending.length === 0) return null;
 
   const scored = pending
-    .map((proposal) => ({ proposal, score: scoreProposal(proposal, policy) }))
+    .map((proposal) => ({ proposal, score: scoreProposal(store, proposal, policy) }))
     .sort((a, b) => b.score - a.score);
 
   const count = Math.min(scored.length, policy.defaultQuestionCount);
@@ -168,7 +183,7 @@ export function generateCurationPacket(
 
   const questions: CurationQuestion[] = selected.map(({ proposal }) => {
     const qId = idGen.next("question");
-    return proposalToQuestion(proposal, qId);
+    return proposalToQuestion(proposal, qId, policy, findTargetObject(store, proposal));
   });
 
   const packetId = idGen.next("curationPacket");

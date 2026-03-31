@@ -17,6 +17,7 @@ import {
   approvalReasonsForProposal,
   getProposalPolicyTags,
   getSupportingEvents,
+  privacyAudienceExpansionForProposal,
   requiresHumanApproval,
 } from "./policy.js";
 
@@ -40,6 +41,9 @@ interface PlanningContext {
   proposalType: ProposalTypeType;
   proposalOperation: ProposalOperationType;
   targetId: string | null;
+  targetPrivacyScope: PrivacyScopeType | null;
+  candidatePrivacyScope: PrivacyScopeType | null;
+  privacyExpansionAudiences: PrivacyScopeType[];
   payload: Record<string, unknown>;
   kind: MemoryObjectKindType;
   statement: string | null;
@@ -149,10 +153,22 @@ function withEditedStatement(context: NormalizationContext, operation = context.
   );
 }
 
-function buildPlanningContext(proposal: ParsedObject, decision: NormalizedDecision): PlanningContext {
+function buildPlanningContext(
+  proposal: ParsedObject,
+  decision: NormalizedDecision,
+  targetObject: ParsedObject | null = null,
+): PlanningContext {
   const payload = decision.candidate_payload;
   const proposalId = decision.proposal_id;
   const proposalType = requireProposalType(proposal.data.type, `Proposal ${proposalId}`);
+  const candidatePrivacyScope = isPrivacyScope(payload.privacy_scope)
+    ? payload.privacy_scope
+    : isPrivacyScope(proposal.data.privacy_scope)
+      ? proposal.data.privacy_scope
+      : null;
+  const targetPrivacyScope = isPrivacyScope(targetObject?.data.privacy_scope)
+    ? targetObject.data.privacy_scope
+    : null;
 
   return {
     proposalId,
@@ -161,23 +177,22 @@ function buildPlanningContext(proposal: ParsedObject, decision: NormalizedDecisi
     targetId: typeof decision.target_ref.object_id === "string"
       ? decision.target_ref.object_id
       : null,
+    targetPrivacyScope,
+    candidatePrivacyScope,
+    privacyExpansionAudiences: privacyAudienceExpansionForProposal(proposal, targetObject),
     payload,
     kind: isMemoryObjectKind(payload.kind) ? payload.kind : "fact",
     statement: typeof payload.statement === "string" ? payload.statement : null,
     confidence: typeof proposal.data.confidence === "number" ? proposal.data.confidence : 0.75,
-    privacyScope: isPrivacyScope(payload.privacy_scope)
-      ? payload.privacy_scope
-      : isPrivacyScope(proposal.data.privacy_scope)
-        ? proposal.data.privacy_scope
-        : null,
+    privacyScope: candidatePrivacyScope,
     sourceRef: buildSourceRef(decision.question_ref),
     reason: typeof proposal.data.reason === "string"
       ? proposal.data.reason
       : `Ratified ${proposalId}`,
     policyTags: getProposalPolicyTags(proposal),
     supportingEvents: getSupportingEvents(proposal),
-    approvalReasons: approvalReasonsForProposal(proposal),
-    requiresExplicitApproval: requiresHumanApproval(proposal),
+    approvalReasons: approvalReasonsForProposal(proposal, undefined, targetObject),
+    requiresExplicitApproval: requiresHumanApproval(proposal, undefined, targetObject),
     tags: Array.isArray(payload.tags)
       ? payload.tags.filter((tag): tag is string => typeof tag === "string")
       : undefined,
@@ -213,6 +228,9 @@ function buildRatificationAuditLog(
       policy_tags: context.policyTags,
       approval_reasons: context.approvalReasons,
       requires_human_approval: context.requiresExplicitApproval,
+      target_privacy_scope: context.targetPrivacyScope,
+      candidate_privacy_scope: context.candidatePrivacyScope,
+      privacy_expansion_audiences: context.privacyExpansionAudiences,
     },
   };
 }
@@ -349,8 +367,12 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
   },
 };
 
-function buildNonAppliedPlan(proposal: ParsedObject, decision: NormalizedDecision): CanonicalOperationPlan {
-  const context = buildPlanningContext(proposal, decision);
+function buildNonAppliedPlan(
+  proposal: ParsedObject,
+  decision: NormalizedDecision,
+  targetObject: ParsedObject | null = null,
+): CanonicalOperationPlan {
+  const context = buildPlanningContext(proposal, decision, targetObject);
 
   switch (decision.answer_type) {
     case "reject":
@@ -391,12 +413,13 @@ export function normalizeDecision(
 export function buildOperationPlan(
   proposal: ParsedObject,
   decision: NormalizedDecision,
+  targetObject: ParsedObject | null = null,
 ): CanonicalOperationPlan {
   if (decision.answer_type === "reject" || decision.answer_type === "defer" || decision.answer_type === "uncertain") {
-    return buildNonAppliedPlan(proposal, decision);
+    return buildNonAppliedPlan(proposal, decision, targetObject);
   }
 
-  const context = buildPlanningContext(proposal, decision);
+  const context = buildPlanningContext(proposal, decision, targetObject);
   return {
     question_ref: decision.question_ref,
     proposal_id: decision.proposal_id,

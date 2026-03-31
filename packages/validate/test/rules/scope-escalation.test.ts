@@ -35,6 +35,19 @@ describe("scopeEscalation rule", () => {
     expect(diags).toHaveLength(0);
   });
 
+  it("treats agent_operational -> project_private as escalation because it exposes a new audience", () => {
+    const store = makeStore([
+      { data: { id: "fact-001", privacy_scope: "agent_operational" }, file: "core/ratified/facts.yaml" },
+      {
+        data: { id: "fact-002", privacy_scope: "project_private", supersedes: ["fact-001"], source_type: "agent_inference" },
+        file: "core/ratified/facts.yaml",
+      },
+    ]);
+    const diags = scopeEscalation(store);
+    expect(diags.some((d) => d.rule === "scope-escalation/automatic")).toBe(true);
+    expect(diags[0].message).toContain("project_private");
+  });
+
   it("no escalation when scope stays the same", () => {
     const store = makeStore([
       { data: { id: "fact-001", privacy_scope: "owner_private" }, file: "core/ratified/facts.yaml" },

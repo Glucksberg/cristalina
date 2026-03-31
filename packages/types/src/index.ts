@@ -39,6 +39,11 @@ export {
   PrivacyScopeField,
   AudienceExceptions,
   SCOPE_ORDER,
+  AUDIENCE_TO_VISIBLE_SCOPES,
+  visibleScopesForAudience,
+  visibleAudiencesForScope,
+  canAudienceAccessScope,
+  newlyVisibleAudiences,
   scopeLevel,
   isScopeEscalation,
 } from "./shared/privacy-scope.js";

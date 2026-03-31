@@ -527,4 +527,53 @@ describe("applyRatification", () => {
       "thin_provenance",
     ]));
   });
+
+  it("records privacy audience expansion when a proposal widens visibility", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "fact",
+      statement: "Internal process detail.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "agent_operational",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "privacy_change",
+      operation: "supersede",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Internal process detail safe for project collaborators.",
+        privacy_scope: "project_private",
+      },
+      reason: "This can be shared with the project context now.",
+      provenance: { supporting_events: ["evt-001"] },
+      confidence: 0.7,
+      privacy_scope: "owner_private",
+      policy_tags: ["privacy"],
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "Yes." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    const logEffect = result.applied[0].effects[0] as { data: Record<string, unknown> };
+    const details = logEffect.data.details as Record<string, unknown>;
+    expect(details.target_privacy_scope).toBe("agent_operational");
+    expect(details.candidate_privacy_scope).toBe("project_private");
+    expect(details.privacy_expansion_audiences).toEqual(["project_private"]);
+    expect(details.approval_reasons).toEqual(expect.arrayContaining([
+      "high_risk_type:privacy_change",
+      "sensitive_policy_tag:privacy",
+      "privacy_audience_expansion:project_private",
+    ]));
+  });
 });

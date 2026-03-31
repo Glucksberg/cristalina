@@ -1,4 +1,5 @@
 import type { ParsedObject } from "@cristalina/validate";
+import { PrivacyScope, newlyVisibleAudiences, type PrivacyScope as PrivacyScopeType } from "@cristalina/types";
 import { isProposalType, proposalTypeRequiresHumanApproval } from "./proposal-type-policy.js";
 
 /** Which domains require human approval before canonical update */
@@ -57,9 +58,48 @@ function proposalOperation(proposal: ParsedObject): string | null {
   return typeof proposal.data.operation === "string" ? proposal.data.operation : null;
 }
 
+function getTargetObjectId(proposal: ParsedObject): string | null {
+  const targetRef = getRecord(proposal.data.target_ref);
+  return typeof targetRef?.object_id === "string" ? targetRef.object_id : null;
+}
+
+function isPrivacyScope(value: unknown): value is PrivacyScopeType {
+  return typeof value === "string" && PrivacyScope.options.includes(value as PrivacyScopeType);
+}
+
+function candidatePrivacyScope(proposal: ParsedObject): PrivacyScopeType | null {
+  const payload = getRecord(proposal.data.candidate_payload);
+  if (isPrivacyScope(payload?.privacy_scope)) return payload.privacy_scope;
+  return isPrivacyScope(proposal.data.privacy_scope) ? proposal.data.privacy_scope : null;
+}
+
+function targetPrivacyScope(targetObject: ParsedObject | null | undefined): PrivacyScopeType | null {
+  return isPrivacyScope(targetObject?.data.privacy_scope) ? targetObject.data.privacy_scope : null;
+}
+
+export function privacyAudienceExpansionForProposal(
+  proposal: ParsedObject,
+  targetObject?: ParsedObject | null,
+): PrivacyScopeType[] {
+  const candidateScope = candidatePrivacyScope(proposal);
+  if (!candidateScope) return [];
+
+  const targetScope = targetPrivacyScope(targetObject);
+  if (targetScope) {
+    return newlyVisibleAudiences(targetScope, candidateScope);
+  }
+
+  if (candidateScope === "shareable" || candidateScope === "public_safe") {
+    return newlyVisibleAudiences("owner_private", candidateScope);
+  }
+
+  return [];
+}
+
 export function approvalReasonsForProposal(
   proposal: ParsedObject,
   policy: PromotionPolicy = DEFAULT_POLICY,
+  targetObject?: ParsedObject | null,
 ): string[] {
   const reasons: string[] = [];
   const data = proposal.data;
@@ -92,6 +132,13 @@ export function approvalReasonsForProposal(
     reasons.push("thin_provenance");
   }
 
+  const targetId = getTargetObjectId(proposal);
+  for (const audience of privacyAudienceExpansionForProposal(proposal, targetObject)) {
+    reasons.push(targetId
+      ? `privacy_audience_expansion:${audience}`
+      : `outward_visibility:${audience}`);
+  }
+
   return [...new Set(reasons)];
 }
 
@@ -99,8 +146,9 @@ export function approvalReasonsForProposal(
 export function requiresHumanApproval(
   proposal: ParsedObject,
   policy: PromotionPolicy = DEFAULT_POLICY,
+  targetObject?: ParsedObject | null,
 ): boolean {
-  return approvalReasonsForProposal(proposal, policy).length > 0;
+  return approvalReasonsForProposal(proposal, policy, targetObject).length > 0;
 }
 
 export function supportingEventCount(proposal: ParsedObject): number {
