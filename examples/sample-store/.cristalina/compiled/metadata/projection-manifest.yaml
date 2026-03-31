@@ -1,0 +1,199 @@
+projection_id: drv-2026-03-29-001
+adapter: cristalina-openclaw
+generated_at: 2026-03-29T12:00:00Z
+audience: owner_private
+channel: owner_private_runtime
+projection_profile: deep
+writeback_mode: proposal_extraction
+artifacts:
+  - id: drv-2026-03-29-002
+    artifact_type: compiled_hot
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: &a1
+      - idt-001
+      - sty-001
+      - fact-001
+      - fact-002
+      - fact-003
+      - val-001
+      - val-002
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/hot/session-pack.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: false
+    channel: owner_private_runtime
+    checksum: ef8aa4ef8fd540aa67fbec18f4add6abb563c98656ddbb4148594eb0c74a5c58
+  - id: drv-2026-03-29-003
+    artifact_type: compiled_warm
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/warm/extended-context.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: false
+    channel: owner_private_runtime
+    checksum: d7d3c2a0a27574e94890dc52d916522eb496b3616a5b3389fa22a4c22d45d7fa
+  - id: drv-2026-03-29-004
+    artifact_type: compiled_cold
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/cold/deep-recall-index.yaml
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: false
+    channel: owner_private_runtime
+    checksum: e09d52b3eb2faf997e12b115f9332b4cc9fc143dc038f280ee5c529c17b49e47
+  - id: drv-2026-03-29-005
+    artifact_type: bootstrap_soul
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/bootstrap/SOUL.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: true
+    channel: owner_private_runtime
+    checksum: 98a427550ec17869c35062f4e6911b94afcfea35fe045753990d3beaa485644c
+    machine_extractable_sections: &a2
+      - identity
+      - style
+  - id: drv-2026-03-29-006
+    artifact_type: bootstrap_value
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/bootstrap/VALUE.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: true
+    channel: owner_private_runtime
+    checksum: bf06b6fb6691bb127fab3d3c0c066595c7c023661106105a3688a47e43d0c4db
+    machine_extractable_sections: &a3
+      - values
+  - id: drv-2026-03-29-007
+    artifact_type: bootstrap_user
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/bootstrap/USER.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: true
+    channel: owner_private_runtime
+    checksum: fbb5f1fb276fbfdaf02b17253278796d4b7656142747b797301b9c078f4e361a
+    machine_extractable_sections: &a4
+      - preferences
+      - known_facts
+  - id: drv-2026-03-29-008
+    artifact_type: bootstrap_memory
+    created_at: 2026-03-29T12:00:00Z
+    derived_from: *a1
+    intended_audience: owner_private
+    generated_by: cristalina-openclaw
+    source: canonical_projection
+    path: compiled/channels/owner_private_runtime/bootstrap/MEMORY.md
+    projection_id: drv-2026-03-29-001
+    projection_profile: deep
+    writeback_mode: proposal_extraction
+    parsable: true
+    channel: owner_private_runtime
+    checksum: 71f32fde5e84d95fcc2da20972561f0c6dfd5c2d240622aabe80cedc4f8f5d8e
+    machine_extractable_sections: &a5
+      - active_memory
+      - open_loops
+contract:
+  adapter: cristalina-openclaw
+  writeback_mode: proposal_extraction
+  default_source_type: runtime_observation
+  files:
+    - path: compiled/hot/session-pack.md
+      artifact_type: compiled_hot
+      parsable: false
+      machine_extractable_sections: []
+      default_confidence: 0.35
+      requires_human_review: true
+      allowed_operations: []
+      provenance_source: openclaw_projection_drift
+    - path: compiled/warm/extended-context.md
+      artifact_type: compiled_warm
+      parsable: false
+      machine_extractable_sections: []
+      default_confidence: 0.35
+      requires_human_review: true
+      allowed_operations: []
+      provenance_source: openclaw_projection_drift
+    - path: compiled/cold/deep-recall-index.yaml
+      artifact_type: compiled_cold
+      parsable: false
+      machine_extractable_sections: []
+      default_confidence: 0.2
+      requires_human_review: true
+      allowed_operations: []
+      provenance_source: openclaw_projection_drift
+    - path: compiled/bootstrap/SOUL.md
+      artifact_type: bootstrap_soul
+      parsable: true
+      machine_extractable_sections: *a2
+      default_confidence: 0.72
+      requires_human_review: true
+      allowed_operations:
+        - create
+        - revise
+        - supersede
+      provenance_source: openclaw_projection_drift
+    - path: compiled/bootstrap/VALUE.md
+      artifact_type: bootstrap_value
+      parsable: true
+      machine_extractable_sections: *a3
+      default_confidence: 0.64
+      requires_human_review: true
+      allowed_operations:
+        - create
+        - revise
+        - supersede
+        - deprecate
+      provenance_source: openclaw_projection_drift
+    - path: compiled/bootstrap/USER.md
+      artifact_type: bootstrap_user
+      parsable: true
+      machine_extractable_sections: *a4
+      default_confidence: 0.76
+      requires_human_review: true
+      allowed_operations:
+        - create
+        - confirm
+        - revise
+        - supersede
+      provenance_source: openclaw_projection_drift
+    - path: compiled/bootstrap/MEMORY.md
+      artifact_type: bootstrap_memory
+      parsable: true
+      machine_extractable_sections: *a5
+      default_confidence: 0.58
+      requires_human_review: true
+      allowed_operations:
+        - create
+        - confirm
+        - contradict
+      provenance_source: openclaw_projection_drift

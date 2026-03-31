@@ -1,0 +1,78 @@
+items:
+  - id: prop-2026-03-29-001
+    type: revise_preference
+    operation: supersede
+    target_ref:
+      object_id: fact-001
+      kind: preference
+      facet: communication_style
+    candidate_payload:
+      kind: preference
+      statement: "Default to concise operational replies unless the owner is explicitly asking for architecture depth."
+      privacy_scope: owner_private
+      tags: [communication, style]
+      related_entities: [ent-owner]
+    reason: "Recent sessions consistently point to concise operational mode."
+    provenance:
+      supporting_events:
+        - evt-2026-03-29-001
+        - evt-2026-03-29-002
+    confidence: 0.68
+    status: pending
+    privacy_scope: owner_private
+    policy_tags: [communication, preference]
+    risk:
+      level: medium
+      requires_human_approval: true
+    created_at: 2026-03-29T03:05:00Z
+    created_by: agent
+  - id: prop-2026-03-29-002
+    type: revise_value
+    operation: confirm
+    target_ref:
+      object_id: val-002
+      kind: value
+      facet: privacy
+    candidate_payload:
+      kind: value
+      privacy_scope: owner_private
+      notes: "Confirm that privacy still outranks convenience."
+    reason: "The value still drives multiple governance decisions and should be reconfirmed."
+    provenance:
+      supporting_events:
+        - evt-2026-03-29-002
+    confidence: 0.74
+    status: queued_for_curation
+    privacy_scope: owner_private
+    policy_tags: [privacy]
+    risk:
+      level: high
+      requires_human_approval: true
+    created_at: 2026-03-29T03:06:00Z
+    created_by: agent
+  - id: prop-2026-03-29-003
+    type: identity_adjustment
+    operation: create
+    target_ref:
+      entity_id: ent-agent-cristalina
+      kind: agent
+      facet: style
+    candidate_payload:
+      kind: style_rule
+      statement: "Be concise for operational work and expand for architecture design or explicit reflection."
+      privacy_scope: owner_private
+      tags: [style, architecture]
+      related_entities: [ent-agent-cristalina, ent-owner]
+    reason: "The owner repeatedly distinguishes operational requests from architecture work."
+    provenance:
+      supporting_events:
+        - evt-2026-03-29-002
+    confidence: 0.7
+    status: pending
+    privacy_scope: owner_private
+    policy_tags: [style, identity]
+    risk:
+      level: medium
+      requires_human_approval: true
+    created_at: 2026-03-29T03:07:00Z
+    created_by: agent

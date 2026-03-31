@@ -17,7 +17,6 @@ const EXPECTED_CORE_DIRS = [
   "core/ratified",
   "core/identity",
   "core/values",
-  "core/preferences",
   "core/privacy",
 ] as const;
 

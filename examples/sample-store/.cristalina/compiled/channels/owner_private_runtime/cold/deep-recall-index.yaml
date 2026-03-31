@@ -1,0 +1,16 @@
+projection_metadata:
+  generated_by: cristalina-openclaw
+  source: canonical_projection
+  audience: owner_private
+  channel: owner_private_runtime
+  generated_at: 2026-03-29T12:00:00Z
+  projection_id: drv-2026-03-29-001
+  projection_profile: deep
+  artifact_id: drv-2026-03-29-004
+  artifact_type: compiled_cold
+  writeback_mode: proposal_extraction
+  parsable: false
+  checksum: e09d52b3eb2faf997e12b115f9332b4cc9fc143dc038f280ee5c529c17b49e47
+cold_index:
+  - score: 0
+    file: core/privacy/policy.yaml

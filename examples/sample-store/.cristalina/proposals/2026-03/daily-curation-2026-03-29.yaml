@@ -1,13 +1,20 @@
-id: curation-2026-03-29
-generated_at: 2026-03-29T03:00:00Z
+packet_id: dcp-2026-03-29-001
+created_at: 2026-03-29T20:00:00Z
+owner: owner
 question_count: 3
 questions:
-  - id: q1
+  - id: q-001
     type: factual_correction
-    prompt: "Does this still hold true? You currently prefer concise operational answers."
-  - id: q2
+    question: "Should I keep concise operational replies as the default unless depth is requested?"
+    proposal_refs: [prop-2026-03-29-001]
+    priority: medium
+  - id: q-002
     type: value_arbitration
-    prompt: "For urgent work, should I prioritize speed over depth?"
-  - id: q3
-    type: identity_style
-    prompt: "Am I mirroring your style too strongly?"
+    question: "Should privacy continue to outrank convenience in ambiguous sharing situations?"
+    proposal_refs: [prop-2026-03-29-002]
+    priority: high
+  - id: q-003
+    type: identity_style_calibration
+    question: "Keep concise operational tone by default, but expand for architecture work?"
+    proposal_refs: [prop-2026-03-29-003]
+    priority: medium

@@ -1,7 +1,22 @@
+version: 1
 default_scope: owner_private
+policy_mode: audience_aware
 escalation_rule: no_automatic_privacy_escalation
+privacy_scope: owner_private
+audiences:
+  owner_private:
+    can_view: [owner_private, agent_operational, project_private, shareable, public_safe]
+  agent_operational:
+    can_view: [agent_operational, shareable, public_safe]
+  project_private:
+    can_view: [project_private, shareable, public_safe]
+  shareable:
+    can_view: [shareable, public_safe]
+  public_safe:
+    can_view: [public_safe]
 sensitive_categories:
   - credentials
   - finances
   - precise_location
   - health
+  - private_strategy

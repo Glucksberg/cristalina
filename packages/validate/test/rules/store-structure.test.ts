@@ -24,7 +24,6 @@ describe("storeStructure rule", () => {
       "core/ratified/facts.yaml",
       "core/identity/soul.yaml",
       "core/values/values.yaml",
-      "core/preferences/communication.yaml",
       "core/privacy/policy.yaml",
       "compiled/hot/session-pack.md",
     ]);
@@ -40,7 +39,6 @@ describe("storeStructure rule", () => {
       "core/ratified/facts.yaml",
       "core/identity/soul.yaml",
       "core/values/values.yaml",
-      "core/preferences/communication.yaml",
       "core/privacy/policy.yaml",
       "compiled/hot/session-pack.md",
     ]);

@@ -1,1 +1,2 @@
-{"id":"evt-2026-03-29-001","kind":"heartbeat","ts":"2026-03-29T02:00:00Z","summary":"Agent reviewed memory research and generated 2 proposals.","source_type":"agent_runtime","privacy_scope":"agent_operational"}
+{"id":"evt-2026-03-29-001","kind":"heartbeat","ts":"2026-03-29T02:00:00Z","summary":"Agent reviewed memory research and generated 2 proposals.","source_type":"runtime_observation","privacy_scope":"agent_operational","related_entities":["ent-agent-cristalina","ent-project-cristalina"]}
+{"id":"evt-2026-03-29-002","kind":"interaction","ts":"2026-03-29T03:00:00Z","summary":"Owner confirmed communication and privacy preferences.","source_type":"human_reply","privacy_scope":"owner_private","related_entities":["ent-owner"]}
