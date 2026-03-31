@@ -2,26 +2,24 @@
 
 ## Status
 
-Cristalina is currently in the **architecture v2 convergence** phase.
+Cristalina is currently in the **v3 implementation hardening** phase.
 
-The repository is no longer only a protocol draft. It already contains working surface area in:
+The repository is no longer only a protocol draft. It already contains working implementation surface in:
 
 - `packages/types`
 - `packages/validate`
 - `packages/core`
 
-The immediate goal is to make the repository internally consistent before adding more feature surface.
+The immediate goal is no longer to define the shape of the system in the abstract.
 
-That means aligning:
+The immediate goal is to finish converging the current implementation into a coherent end-to-end v3:
 
-- protocol idea
-- data model
-- sample store
-- validation rules
-- core lifecycle operations
-- adapter contracts
+- event -> proposal -> ratification -> canonical apply
+- authority -> audience -> projection policy
+- canonical core -> compiler -> adapter writeback
+- docs -> schemas -> fixtures -> executable behavior
 
-The binding architectural direction for this work is defined in `docs/ARCHITECTURE-V2.md`.
+`docs/ARCHITECTURE-V2.md` remains the convergence base, but the repository is now beyond pure v2 clarification work and into executable v3 hardening.
 
 ---
 
@@ -30,19 +28,27 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 ### Already present
 
 - draft protocol documents
-- starter schemas
+- generated schemas
 - store reader and linter
-- core operation surface
-- compiler and bootstrap generator prototypes
+- structured proposal workflow
+- ratification normalization and operation planning
+- proposal type policy
+- provenance-aware promotion policy
+- audience-aware visibility model
+- actor and channel authority policy
+- stable entity and reference support
+- compiler and bootstrap generation
+- writeback contract and projection manifest support
+- channel-profiled projection compilation
 - sample store and fixtures
 
-### Not yet converged
+### Still not fully converged
 
-- canonical representation is still mixed between typed objects and document-shaped files
-- proposal payloads are not structured enough for deterministic apply
-- ratification semantics are richer in the docs than in the executable model
-- privacy and audience are still modeled too narrowly
-- OpenClaw writeback policy is specified conceptually but not yet contract-complete
+- docs still lag behind what the code already hardened in v3
+- sample store parity is not yet strong enough
+- policy is still distributed across executable code rather than modeled as first-class policy objects
+- adapter drift extraction is only contract-shaped, not yet fully realized as a governed ingest loop
+- the full system still needs a deliberate whole-architecture review before broader surface expansion
 
 ---
 
@@ -67,7 +73,7 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 ## Phase 1 - Canonical Model Freeze
 
 ### Status
-- current phase
+- substantially complete in code, still needs repo-wide parity cleanup
 
 ### Goals
 - freeze what counts as canonical memory
@@ -90,6 +96,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 
 ## Phase 2 - Proposal and Ratification Redesign
 
+### Status
+- substantially complete in code
+
 ### Goals
 - make proposals executable as structured intent
 - make ratification faithfully translatable into deterministic operations
@@ -110,6 +119,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 
 ## Phase 3 - Policy and Audience Engine
 
+### Status
+- active and materially implemented, but not yet factored into first-class policy objects
+
 ### Goals
 - replace path heuristics with policy-backed authority checks
 - replace privacy ladder assumptions with audience-aware visibility policy
@@ -129,6 +141,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 
 ## Phase 4 - Core and Compiler Convergence
 
+### Status
+- active and materially implemented
+
 ### Goals
 - align `packages/core` with the frozen model and policy contracts
 - make compilation deterministic from canonical data plus policy
@@ -139,6 +154,7 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 - v2-aligned canonical store writer
 - compiler scoring and selection tied to policy and stable references
 - richer projection metadata
+- channel-specific projection namespaces and projection profiles
 - improved rollback expectations
 
 ### Exit criteria
@@ -148,6 +164,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 ---
 
 ## Phase 5 - OpenClaw Adapter Hardening
+
+### Status
+- active, contract-complete enough to continue, not operationally complete yet
 
 ### Goals
 - implement the OpenClaw adapter against the converged contracts
@@ -170,6 +189,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 
 ## Phase 6 - Repository Parity and Evaluation
 
+### Status
+- not started as a focused pass
+
 ### Goals
 - verify that docs, schemas, fixtures, validator, and core agree
 - measure whether the protocol improves real memory behavior instead of only feeling useful
@@ -184,6 +206,9 @@ The binding architectural direction for this work is defined in `docs/ARCHITECTU
 ---
 
 ## Phase 7 - Broader Adapter Surface
+
+### Status
+- deferred until v3 coherence review and parity pass
 
 ### Goals
 - define portable contracts beyond OpenClaw
@@ -208,3 +233,37 @@ These are explicitly not required for Cristalina v2 convergence:
 - native multi-agent synchronization
 
 They may be added later as optional extensions once the canonical protocol is stable.
+
+---
+
+## Pause Conditions Before Further Structural Hardening
+
+Before starting another deep hardening pass, pause for a full-system review if any of the following are true:
+
+- the next step introduces a new domain primitive instead of hardening an existing one
+- the next step requires simultaneous changes across `packages/types`, `packages/core`, `packages/validate`, and docs or examples
+- local inconsistencies are being fixed, but the end-to-end lifecycle is no longer being re-evaluated
+- a new feature would expand surface area before repo parity is checked
+
+When one of these conditions is met, the repository should stop local hardening and review the full pipeline again:
+
+```text
+event -> proposal -> ratification -> canonical apply -> projection -> drift -> re-ingest
+```
+
+The purpose of that pause is not to slow development down.
+
+It is to prevent Cristalina from becoming a stack of good local decisions that no longer compose cleanly as a governed memory system.
+
+---
+
+## Recommended Next Checkpoint
+
+Cristalina has now reached the point where a broad review is justified before too many more structural additions land.
+
+That checkpoint should answer:
+
+- does the v3 codepath already express the protocol thesis end to end?
+- which remaining gaps are still architectural?
+- which remaining gaps are now mostly documentation, parity, and fixture work?
+- what should be frozen before adding broader adapter surface?
