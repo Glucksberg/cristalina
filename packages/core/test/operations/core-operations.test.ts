@@ -49,6 +49,18 @@ describe("CONFIRM", () => {
     expect(obj!.data.evidence_count).toBe(2);
   });
 
+  it("promotes candidate objects to ratified", async () => {
+    seedObject({ id: "fact-test-002", kind: "fact", statement: "candidate fact", status: "candidate", confidence: 0.6, evidence_count: 0, privacy_scope: "owner_private" });
+
+    await executeOperation(store, {
+      op: "CONFIRM", targetId: "fact-test-002", confirmedBy: "owner",
+    });
+
+    const snapshot = await store.read();
+    const obj = snapshot.coreObjects.find((o) => o.data.id === "fact-test-002");
+    expect(obj!.data.status).toBe("ratified");
+  });
+
   it("throws for non-existent target", async () => {
     await expect(
       executeOperation(store, { op: "CONFIRM", targetId: "nope-999", confirmedBy: "owner" }),

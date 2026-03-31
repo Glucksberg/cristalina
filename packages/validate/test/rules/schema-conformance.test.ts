@@ -137,4 +137,26 @@ describe("schemaConformance rule", () => {
     // Flat config objects without id+statement are skipped
     expect(schemaConformance(store)).toHaveLength(0);
   });
+
+  it("accepts relationship objects with stable refs", () => {
+    const store = makeStore({
+      coreObjects: [{
+        data: {
+          id: "rel-001",
+          kind: "relationship",
+          from_ref: { entity_id: "ent-owner", kind: "owner" },
+          relation: "prefers",
+          to_ref: { object_id: "fact-001", kind: "fact" },
+          status: "ratified",
+          confidence: 0.9,
+          source_type: "human_reply",
+          source_ref: "test",
+          privacy_scope: "owner_private",
+        },
+        file: "core/ratified/relationships.yaml",
+      }],
+    });
+
+    expect(schemaConformance(store)).toHaveLength(0);
+  });
 });

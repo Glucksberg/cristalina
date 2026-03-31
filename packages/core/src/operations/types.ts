@@ -3,6 +3,7 @@ import type {
   PrivacyScope,
   SourceType,
   MemoryObjectKind,
+  EntityId,
   ProposalType,
   ProposalOperation,
   ProposalTargetRef,
@@ -60,7 +61,7 @@ export interface LogInput {
   actor?: string;
   session_id?: string;
   project?: string;
-  related_entities?: string[];
+  related_entities?: EntityId[];
   tags?: string[];
   details?: Record<string, unknown> | string | null;
 }
@@ -90,7 +91,7 @@ export interface CreateInput {
   confidence: number;
   privacy_scope: PrivacyScope;
   tags?: string[];
-  related_entities?: string[];
+  related_entities?: EntityId[];
   notes?: string;
   authority?: OperationAuthorityContext;
   authorized?: boolean;

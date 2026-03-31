@@ -57,9 +57,12 @@ export function schemaConformance(store: ParsedStore): Diagnostic[] {
   for (const obj of store.coreObjects) {
     const hasId = typeof obj.data.id === "string";
     const hasStatement = typeof obj.data.statement === "string";
-    const hasRelationFields = typeof obj.data.from === "string" && typeof obj.data.relation === "string";
+    const hasLegacyRelationFields = typeof obj.data.from === "string" && typeof obj.data.relation === "string";
+    const hasStableRelationFields = typeof obj.data.from_ref === "object"
+      && obj.data.from_ref !== null
+      && typeof obj.data.relation === "string";
 
-    if (hasId && (hasStatement || hasRelationFields)) {
+    if (hasId && (hasStatement || hasLegacyRelationFields || hasStableRelationFields)) {
       const { schema, name } = schemaForKind(obj.data.kind);
       validateObject(obj, schema, name, diagnostics);
     }

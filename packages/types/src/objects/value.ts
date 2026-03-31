@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MemoryStatus, SourceType, PrivacyScope, MemoryObjectKind } from "../enums.js";
+import { EntityId } from "../ids.js";
 import { ValueId } from "../ids.js";
 import { Confidence } from "../shared/confidence.js";
 
@@ -19,7 +20,7 @@ export const ValueSchema = z
 
     // Recommended fields
     priority: z.enum(["low", "medium", "high", "critical"]).optional(),
-    applies_to: z.array(z.string()).optional(),
+    applies_to: z.array(EntityId).optional(),
     exceptions: z.array(z.string()).optional(),
     examples: z.array(z.string()).optional(),
     created_at: z.string().datetime().optional(),

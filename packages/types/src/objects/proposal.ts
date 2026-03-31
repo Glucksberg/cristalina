@@ -6,22 +6,13 @@ import {
   PrivacyScope,
   MemoryObjectKind,
 } from "../enums.js";
-import { CanonicalObjectId, EventId, ProposalId } from "../ids.js";
+import { CanonicalObjectId, EntityId, EventId, ProposalId } from "../ids.js";
 import { Confidence } from "../shared/confidence.js";
+import { StableReferenceSchema } from "../shared/stable-reference.js";
 
 const RiskLevel = z.enum(["low", "medium", "high", "critical"]);
 
-export const ProposalTargetRefSchema = z
-  .object({
-    object_id: CanonicalObjectId.optional(),
-    kind: MemoryObjectKind.optional(),
-    facet: z.string().min(1).optional(),
-  })
-  .strict()
-  .refine(
-    (value) => value.object_id !== undefined || value.kind !== undefined || value.facet !== undefined,
-    "target_ref must include at least one stable locator",
-  );
+export const ProposalTargetRefSchema = StableReferenceSchema;
 
 export const ProposalCandidatePayloadSchema = z
   .object({
@@ -29,7 +20,7 @@ export const ProposalCandidatePayloadSchema = z
     statement: z.string().min(1).optional(),
     privacy_scope: PrivacyScope.optional(),
     tags: z.array(z.string().min(1)).optional(),
-    related_entities: z.array(z.string().min(1)).optional(),
+    related_entities: z.array(EntityId).optional(),
     related_object_id: CanonicalObjectId.optional(),
     notes: z.string().min(1).optional(),
   })

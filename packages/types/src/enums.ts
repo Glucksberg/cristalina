@@ -176,6 +176,19 @@ export const RelationType = z.enum([
 ]);
 export type RelationType = z.infer<typeof RelationType>;
 
+// --- Entity Kind (ARCHITECTURE-V2.md §4.2) ---
+
+export const EntityKind = z.enum([
+  "owner",
+  "agent",
+  "project",
+  "runtime",
+  "channel",
+  "person",
+  "organization",
+]);
+export type EntityKind = z.infer<typeof EntityKind>;
+
 // --- Derived Artifact Type (OPENCLAW-ADAPTER.md §9-11) ---
 
 export const DerivedArtifactType = z.enum([

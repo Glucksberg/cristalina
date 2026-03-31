@@ -13,6 +13,7 @@ export {
   ProposalOperation,
   QuestionClass,
   RelationType,
+  EntityKind,
   DerivedArtifactType,
   WritebackMode,
 } from "./enums.js";
@@ -29,6 +30,7 @@ export {
   StyleRuleId,
   ContradictionId,
   DerivedArtifactId,
+  EntityId,
   QuestionId,
   QuestionResponseId,
   CurationPacketId,
@@ -49,6 +51,11 @@ export {
   scopeLevel,
   isScopeEscalation,
 } from "./shared/privacy-scope.js";
+export {
+  ReferenceKind,
+  StableReferenceSchema,
+  type StableReference,
+} from "./shared/stable-reference.js";
 
 export {
   Confidence,

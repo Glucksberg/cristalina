@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MemoryStatus, MemoryObjectKind, PrivacyScope, SourceType } from "../enums.js";
+import { EntityId } from "../ids.js";
 import { Confidence } from "../shared/confidence.js";
 
 // Canonical Memory Object — stable, governed memory (DATA-MODEL.md §2.3)
@@ -26,7 +27,7 @@ export const MemoryObjectSchema = z
     valid_from: z.string().optional(),
     valid_to: z.string().nullable().optional(),
     tags: z.array(z.string()).optional(),
-    related_entities: z.array(z.string()).optional(),
+    related_entities: z.array(EntityId).optional(),
     notes: z.string().optional(),
   })
   .strict();

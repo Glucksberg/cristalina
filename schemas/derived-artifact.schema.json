@@ -26,8 +26,7 @@
     "derived_from": {
       "type": "array",
       "items": {
-        "type": "string",
-        "pattern": "^(evt-|prop-|fact-|rel-|val-|idt-|sty-|ctr-|drv-|q-|qr-|dcp-)"
+        "type": "string"
       }
     },
     "intended_audience": {
@@ -45,6 +44,7 @@
       "minLength": 1
     },
     "source": {
+      "type": "string",
       "const": "canonical_projection"
     },
     "path": {

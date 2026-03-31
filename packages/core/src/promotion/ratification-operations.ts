@@ -1,6 +1,7 @@
 import type { ParsedObject } from "@cristalina/validate";
 import { MemoryObjectKind, PrivacyScope, ProposalOperation } from "@cristalina/types";
 import type {
+  EntityId,
   MemoryObjectKind as MemoryObjectKindType,
   PrivacyScope as PrivacyScopeType,
   ProposalOperation as ProposalOperationType,
@@ -56,7 +57,7 @@ interface PlanningContext {
   approvalReasons: string[];
   requiresExplicitApproval: boolean;
   tags?: string[];
-  relatedEntities?: string[];
+  relatedEntities?: EntityId[];
   notes?: string;
 }
 
@@ -205,7 +206,7 @@ function buildPlanningContext(
       ? payload.tags.filter((tag): tag is string => typeof tag === "string")
       : undefined,
     relatedEntities: Array.isArray(payload.related_entities)
-      ? payload.related_entities.filter((entity): entity is string => typeof entity === "string")
+      ? payload.related_entities.filter((entity): entity is EntityId => typeof entity === "string")
       : undefined,
     notes: typeof payload.notes === "string" ? payload.notes : undefined,
   };

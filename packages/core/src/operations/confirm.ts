@@ -36,6 +36,10 @@ export function planConfirm(
     evidence_count: oldEvidence + 1,
   };
 
+  if (target.data.status === "candidate") {
+    patch.status = "ratified";
+  }
+
   const effects: StoreEffect[] = [
     { type: "update-yaml-item", path: filePath, id: input.targetId, patch },
   ];

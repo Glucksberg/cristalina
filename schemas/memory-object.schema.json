@@ -131,7 +131,8 @@
     "related_entities": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^ent-"
       }
     },
     "notes": {

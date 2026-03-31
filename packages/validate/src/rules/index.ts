@@ -10,6 +10,7 @@ import { statusConsistency } from "./status-consistency.js";
 import { supersessionIntegrity } from "./supersession-integrity.js";
 import { contradictionIntegrity } from "./contradiction-integrity.js";
 import { scopeEscalation } from "./scope-escalation.js";
+import { stableReferences } from "./stable-references.js";
 import { storeStructure } from "./store-structure.js";
 import { snapshotExpectations } from "../snapshot/expectations.js";
 
@@ -25,6 +26,7 @@ export const ALL_RULES: readonly Rule[] = [
   supersessionIntegrity,
   contradictionIntegrity,
   scopeEscalation,
+  stableReferences,
   storeStructure,
   snapshotExpectations,
 ];
@@ -39,6 +41,7 @@ export {
   supersessionIntegrity,
   contradictionIntegrity,
   scopeEscalation,
+  stableReferences,
   storeStructure,
   snapshotExpectations,
 };

@@ -30,10 +30,6 @@
           "type": "string",
           "minLength": 1
         },
-        "architecture_v2": {
-          "type": "string",
-          "minLength": 1
-        },
         "curation_protocol": {
           "type": "string",
           "minLength": 1
@@ -46,7 +42,6 @@
       "required": [
         "spec",
         "data_model",
-        "architecture_v2",
         "curation_protocol",
         "openclaw_adapter"
       ],

@@ -30,6 +30,7 @@ export {
   supersessionIntegrity,
   contradictionIntegrity,
   scopeEscalation,
+  stableReferences,
   storeStructure,
 } from "./rules/index.js";
 

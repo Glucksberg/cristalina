@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EventKind, SourceType, PrivacyScope } from "../enums.js";
+import { EntityId } from "../ids.js";
 import { EventId } from "../ids.js";
 
 // Event — append-only raw record (DATA-MODEL.md §2.1)
@@ -19,7 +20,7 @@ export const EventSchema = z
     actor: z.string().optional(),
     session_id: z.string().optional(),
     project: z.string().optional(),
-    related_entities: z.array(z.string()).optional(),
+    related_entities: z.array(EntityId).optional(),
     artifacts: z.array(z.string()).optional(),
     details: z
       .union([z.record(z.unknown()), z.array(z.unknown()), z.string(), z.null()])

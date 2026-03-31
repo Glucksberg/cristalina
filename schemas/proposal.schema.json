@@ -36,17 +36,47 @@
     "target_ref": {
       "type": "object",
       "properties": {
-        "object_id": {
+        "entity_id": {
           "type": "string",
-          "pattern": "^(fact-|rel-|val-|idt-|sty-)"
+          "pattern": "^ent-"
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^fact-"
+            },
+            {
+              "type": "string",
+              "pattern": "^rel-"
+            },
+            {
+              "type": "string",
+              "pattern": "^val-"
+            },
+            {
+              "type": "string",
+              "pattern": "^idt-"
+            },
+            {
+              "type": "string",
+              "pattern": "^sty-"
+            }
+          ]
         },
         "kind": {
           "type": "string",
           "enum": [
+            "owner",
+            "agent",
+            "project",
+            "runtime",
+            "channel",
+            "person",
+            "organization",
             "fact",
             "preference",
             "constraint",
-            "project",
             "relationship",
             "belief",
             "identity_trait",
@@ -58,15 +88,13 @@
         "facet": {
           "type": "string",
           "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
         }
       },
-      "required": [],
-      "additionalProperties": false,
-      "anyOf": [
-        { "required": ["object_id"] },
-        { "required": ["kind"] },
-        { "required": ["facet"] }
-      ]
+      "additionalProperties": false
     },
     "candidate_payload": {
       "type": "object",
@@ -111,12 +139,32 @@
           "type": "array",
           "items": {
             "type": "string",
-            "minLength": 1
+            "pattern": "^ent-"
           }
         },
         "related_object_id": {
-          "type": "string",
-          "pattern": "^(fact-|rel-|val-|idt-|sty-)"
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^fact-"
+            },
+            {
+              "type": "string",
+              "pattern": "^rel-"
+            },
+            {
+              "type": "string",
+              "pattern": "^val-"
+            },
+            {
+              "type": "string",
+              "pattern": "^idt-"
+            },
+            {
+              "type": "string",
+              "pattern": "^sty-"
+            }
+          ]
         },
         "notes": {
           "type": "string",
@@ -225,55 +273,5 @@
     "privacy_scope"
   ],
   "additionalProperties": false,
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "operation": {
-            "enum": ["confirm", "revise", "supersede", "deprecate", "contradict"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "target_ref": {
-            "required": ["object_id"]
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "operation": {
-            "enum": ["create", "revise", "supersede"]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "candidate_payload": {
-            "required": ["kind", "statement"]
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "operation": {
-            "const": "contradict"
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "candidate_payload": {
-            "required": ["kind", "related_object_id"]
-          }
-        }
-      }
-    }
-  ],
   "title": "Cristalina Proposal"
 }

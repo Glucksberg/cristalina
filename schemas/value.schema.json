@@ -81,7 +81,8 @@
     "applies_to": {
       "type": "array",
       "items": {
-        "type": "string"
+        "type": "string",
+        "pattern": "^ent-"
       }
     },
     "exceptions": {

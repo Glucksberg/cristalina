@@ -3,11 +3,13 @@ import {
   EventSchema,
   ProposalSchema,
   MemoryObjectSchema,
+  RelationshipSchema,
   ContradictionSchema,
   ManifestSchema,
   AdapterWritebackContractSchema,
   ProjectionManifestSchema,
   DerivedArtifactSchema,
+  StableReferenceSchema,
   PrivacyScope,
   MemoryStatus,
   ProposalStatus,
@@ -143,6 +145,33 @@ describe("ProposalSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts entity-based target refs for create proposals", () => {
+    const result = ProposalSchema.safeParse({
+      id: "prop-001",
+      type: "new_fact",
+      operation: "create",
+      target_ref: {
+        entity_id: "ent-owner",
+        kind: "owner",
+        facet: "working_preferences",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "User prefers concise replies in ops mode.",
+        privacy_scope: "owner_private",
+        related_entities: ["ent-owner"],
+      },
+      reason: "Test proposal",
+      provenance: {
+        supporting_events: ["evt-001"],
+      },
+      confidence: 0.68,
+      status: "pending",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects non-canonical target object IDs", () => {
     const result = ProposalSchema.safeParse({
       id: "prop-001",
@@ -178,6 +207,60 @@ describe("MemoryObjectSchema", () => {
       privacy_scope: "owner_private",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("StableReferenceSchema", () => {
+  it("accepts entity and object locators", () => {
+    const result = StableReferenceSchema.safeParse({
+      entity_id: "ent-owner",
+      object_id: "fact-001",
+      kind: "owner",
+      facet: "working_preferences",
+      label: "owner preference context",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("RelationshipSchema", () => {
+  it("accepts stable endpoint refs", () => {
+    const result = RelationshipSchema.safeParse({
+      id: "rel-001",
+      kind: "relationship",
+      from_ref: {
+        entity_id: "ent-owner",
+        kind: "owner",
+      },
+      relation: "prefers",
+      to_ref: {
+        object_id: "fact-001",
+        kind: "fact",
+        label: "concise answers",
+      },
+      status: "ratified",
+      confidence: 0.91,
+      source_type: "human_reply",
+      source_ref: "q-2",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("keeps legacy textual endpoints valid during migration", () => {
+    const result = RelationshipSchema.safeParse({
+      id: "rel-001",
+      kind: "relationship",
+      from: "user",
+      relation: "prefers",
+      to: "concise_answers",
+      status: "ratified",
+      confidence: 0.91,
+      source_type: "human_reply",
+      source_ref: "q-2",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(true);
   });
 });
 
