@@ -3,6 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ReviseInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
+import { enforceAuthority } from "./authority.js";
 
 export function planRevise(
   store: ParsedStore,
@@ -13,8 +14,18 @@ export function planRevise(
   const target = store.coreObjects.find((o) => o.data.id === input.targetId);
   if (!target) throw new Error(`Object not found: ${input.targetId}`);
 
-  const ts = clock.isoNow();
+  const status = target.data.status;
+  if (status === "archived") {
+    throw new Error(`Cannot revise archived object: ${input.targetId}`);
+  }
+  if (status === "crystallized") {
+    throw new Error(`Cannot revise crystallized object: ${input.targetId} — supersede it instead`);
+  }
+
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
+  enforceAuthority(kind, input.targetId, input.authorized);
+
+  const ts = clock.isoNow();
 
   const patch: Record<string, unknown> = {
     statement: input.newStatement,

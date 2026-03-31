@@ -14,6 +14,8 @@ export interface RatificationInput {
   questionToProposal: Map<string, string>;
   /** Map question_ref -> target object ID (for CONFIRM/REVISE) */
   questionToTarget: Map<string, string>;
+  /** File path where proposals are stored (for status updates) */
+  proposalFilePath?: string;
 }
 
 export interface RatificationResult {
@@ -101,6 +103,21 @@ export async function applyRatification(
         });
         applied.push(result);
         break;
+      }
+    }
+
+    // Update proposal status if we know the file path
+    if (input.proposalFilePath && proposalId) {
+      const statusMap: Record<string, string> = {
+        accept: "approved",
+        reject: "rejected",
+        edit: "approved",
+        defer: "deferred",
+        uncertain: "pending",
+      };
+      const newStatus = statusMap[response.answer_type];
+      if (newStatus) {
+        store.updateYamlItem(input.proposalFilePath, proposalId, { status: newStatus });
       }
     }
   }

@@ -3,6 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ConfirmInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
+import { enforceAuthority } from "./authority.js";
 
 export function planConfirm(
   store: ParsedStore,
@@ -13,12 +14,13 @@ export function planConfirm(
   const target = findObject(store, input.targetId);
   if (!target) throw new Error(`Object not found: ${input.targetId}`);
 
+  const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
+  enforceAuthority(kind, input.targetId, input.authorized);
+
   const ts = clock.isoNow();
   const oldConfidence = typeof target.data.confidence === "number" ? target.data.confidence : 0;
   const newConfidence = input.newConfidence ?? Math.min(oldConfidence + 0.1, 1.0);
   const oldEvidence = typeof target.data.evidence_count === "number" ? target.data.evidence_count : 0;
-
-  const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
   const filePath = coreFilePath(kind);
 
   const patch: Record<string, unknown> = {

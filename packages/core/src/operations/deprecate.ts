@@ -3,6 +3,7 @@ import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { DeprecateInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
+import { enforceAuthority } from "./authority.js";
 
 export function planDeprecate(
   store: ParsedStore,
@@ -13,8 +14,15 @@ export function planDeprecate(
   const target = store.coreObjects.find((o) => o.data.id === input.targetId);
   if (!target) throw new Error(`Object not found: ${input.targetId}`);
 
-  const ts = clock.isoNow();
+  const status = target.data.status;
+  if (status === "crystallized") {
+    throw new Error(`Cannot deprecate crystallized object: ${input.targetId} — supersede it instead`);
+  }
+
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
+  enforceAuthority(kind, input.targetId, input.authorized);
+
+  const ts = clock.isoNow();
 
   const patch: Record<string, unknown> = { status: "deprecated" };
   if (input.supersededBy) {

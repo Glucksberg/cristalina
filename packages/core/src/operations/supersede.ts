@@ -1,8 +1,17 @@
 import type { ParsedStore } from "@cristalina/validate";
 import type { Clock } from "../clock/clock.js";
-import type { IdGenerator } from "../id/generator.js";
+import type { IdGenerator, PrefixKey } from "../id/generator.js";
 import type { SupersedeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
+import { enforceAuthority } from "./authority.js";
+
+const KIND_TO_PREFIX: Record<string, PrefixKey> = {
+  fact: "fact", preference: "fact", constraint: "fact", project: "fact", belief: "fact",
+  value: "value", priority: "value",
+  identity_trait: "identityTrait",
+  style_rule: "styleRule",
+  relationship: "relationship",
+};
 
 export function planSupersede(
   store: ParsedStore,
@@ -13,10 +22,12 @@ export function planSupersede(
   const old = store.coreObjects.find((o) => o.data.id === input.oldId);
   if (!old) throw new Error(`Object not found: ${input.oldId}`);
 
-  const ts = clock.isoNow();
   const oldKind = typeof old.data.kind === "string" ? old.data.kind : "fact";
+  enforceAuthority(oldKind, input.oldId, input.authorized);
+
+  const ts = clock.isoNow();
   const newKind = input.newKind ?? oldKind;
-  const newId = idGen.next("fact");
+  const newId = idGen.next(KIND_TO_PREFIX[newKind] ?? "fact");
 
   const newObject: Record<string, unknown> = {
     id: newId,

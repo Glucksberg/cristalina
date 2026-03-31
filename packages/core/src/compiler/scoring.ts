@@ -60,12 +60,16 @@ export function assignTier(obj: ParsedObject, score: number): "hot" | "warm" | "
   return "cold";
 }
 
-/** Filter objects by audience privacy scope */
+/**
+ * Filter objects by audience privacy scope.
+ * An object is visible if its scope is at least as public as the audience.
+ * owner_private(0) audience sees everything; public_safe(4) only sees public_safe.
+ */
 export function filterByAudience(objects: ParsedObject[], audience: PrivacyScope): ParsedObject[] {
   const audienceLevel = scopeLevel(audience);
   return objects.filter((obj) => {
     const scope = obj.data.privacy_scope;
     if (typeof scope !== "string") return false;
-    return scopeLevel(scope as PrivacyScope) <= audienceLevel;
+    return scopeLevel(scope as PrivacyScope) >= audienceLevel;
   });
 }

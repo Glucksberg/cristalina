@@ -197,3 +197,106 @@ describe("ARCHIVE", () => {
     ).rejects.toThrow("supersede it first");
   });
 });
+
+// === Review fix tests ===
+
+describe("Authority enforcement (B3)", () => {
+  function seedValueObject(id: string) {
+    store.appendYamlItem("core/values/values.yaml", {
+      id, kind: "value", statement: "test value", status: "ratified", confidence: 0.9, privacy_scope: "owner_private",
+      source_type: "human_reply", source_ref: "test", evidence_count: 1,
+    });
+  }
+
+  it("CONFIRM on high-risk kind requires authorized", async () => {
+    seedValueObject("val-auth-001");
+    await expect(
+      executeOperation(store, { op: "CONFIRM", targetId: "val-auth-001", confirmedBy: "agent" }),
+    ).rejects.toThrow("requires authorization");
+  });
+
+  it("CONFIRM on high-risk kind succeeds with authorized: true", async () => {
+    seedValueObject("val-auth-001");
+    const result = await executeOperation(store, {
+      op: "CONFIRM", targetId: "val-auth-001", confirmedBy: "owner", authorized: true,
+    });
+    expect(result.operation).toBe("CONFIRM");
+  });
+
+  it("REVISE on high-risk kind requires authorized", async () => {
+    seedValueObject("val-auth-001");
+    await expect(
+      executeOperation(store, {
+        op: "REVISE", targetId: "val-auth-001", newStatement: "new",
+        reason: "test", source_type: "human_reply", source_ref: "q-1", confirmedBy: "owner",
+      }),
+    ).rejects.toThrow("requires authorization");
+  });
+
+  it("DEPRECATE on high-risk kind requires authorized", async () => {
+    seedValueObject("val-auth-001");
+    await expect(
+      executeOperation(store, { op: "DEPRECATE", targetId: "val-auth-001", reason: "test" }),
+    ).rejects.toThrow("requires authorization");
+  });
+});
+
+describe("State transition guards (C3+C4)", () => {
+  it("REVISE rejects archived object", async () => {
+    seedObject({ id: "fact-test-001", kind: "fact", statement: "old", status: "archived", confidence: 0.5, privacy_scope: "owner_private" });
+    await expect(
+      executeOperation(store, {
+        op: "REVISE", targetId: "fact-test-001", newStatement: "new",
+        reason: "test", source_type: "human_reply", source_ref: "q-1", confirmedBy: "owner",
+      }),
+    ).rejects.toThrow("Cannot revise archived");
+  });
+
+  it("REVISE rejects crystallized object", async () => {
+    seedObject({ id: "fact-test-001", kind: "fact", statement: "old", status: "crystallized", confidence: 0.98, privacy_scope: "owner_private" });
+    await expect(
+      executeOperation(store, {
+        op: "REVISE", targetId: "fact-test-001", newStatement: "new",
+        reason: "test", source_type: "human_reply", source_ref: "q-1", confirmedBy: "owner",
+      }),
+    ).rejects.toThrow("Cannot revise crystallized");
+  });
+
+  it("DEPRECATE rejects crystallized object", async () => {
+    seedObject({ id: "fact-test-001", kind: "fact", statement: "test", status: "crystallized", confidence: 0.98, privacy_scope: "owner_private" });
+    await expect(
+      executeOperation(store, { op: "DEPRECATE", targetId: "fact-test-001", reason: "test" }),
+    ).rejects.toThrow("Cannot deprecate crystallized");
+  });
+});
+
+describe("CONTRADICT marks disputed (C2)", () => {
+  it("sets both sides to disputed status", async () => {
+    seedObject({ id: "fact-test-001", kind: "fact", statement: "A", status: "ratified", confidence: 0.8, privacy_scope: "owner_private" });
+    seedObject({ id: "fact-test-002", kind: "fact", statement: "not A", status: "ratified", confidence: 0.7, privacy_scope: "owner_private" });
+
+    await executeOperation(store, {
+      op: "CONTRADICT", leftId: "fact-test-001", rightId: "fact-test-002", reason: "conflict",
+    });
+
+    const snapshot = await store.read();
+    const left = snapshot.coreObjects.find((o) => o.data.id === "fact-test-001");
+    const right = snapshot.coreObjects.find((o) => o.data.id === "fact-test-002");
+    expect(left!.data.status).toBe("disputed");
+    expect(right!.data.status).toBe("disputed");
+  });
+});
+
+describe("SUPERSEDE ID prefix (B2)", () => {
+  it("generates val- prefix when superseding a value", async () => {
+    store.appendYamlItem("core/values/values.yaml", {
+      id: "val-old-001", kind: "value", statement: "old value", status: "ratified", confidence: 0.8, privacy_scope: "owner_private",
+    });
+    const result = await executeOperation(store, {
+      op: "SUPERSEDE", oldId: "val-old-001", newStatement: "new value",
+      source_type: "human_reply", source_ref: "q-1", confirmedBy: "owner",
+      confidence: 0.92, privacy_scope: "owner_private", authorized: true,
+    });
+    expect(result.produced[0]).toMatch(/^val-/);
+  });
+});

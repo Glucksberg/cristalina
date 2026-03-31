@@ -2,7 +2,7 @@ import type { ParsedStore } from "@cristalina/validate";
 import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import type { ContradictInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
-import { contradictionFilePath } from "../store/paths.js";
+import { contradictionFilePath, coreFilePath } from "../store/paths.js";
 
 export function planContradict(
   store: ParsedStore,
@@ -30,8 +30,13 @@ export function planContradict(
   };
   if (input.priority) contradiction.priority = input.priority;
 
+  const leftKind = typeof left.data.kind === "string" ? left.data.kind : "fact";
+  const rightKind = typeof right.data.kind === "string" ? right.data.kind : "fact";
+
   const effects: StoreEffect[] = [
     { type: "append-yaml-item", path: contradictionFilePath(), item: contradiction },
+    { type: "update-yaml-item", path: coreFilePath(leftKind), id: input.leftId, patch: { status: "disputed" } },
+    { type: "update-yaml-item", path: coreFilePath(rightKind), id: input.rightId, patch: { status: "disputed" } },
   ];
 
   const auditEntry: AuditEntry = {

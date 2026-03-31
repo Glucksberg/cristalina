@@ -75,15 +75,36 @@ describe("scoring", () => {
     expect(assignTier(obj, score)).toBe("hot");
   });
 
-  it("filters by audience scope", () => {
+  it("filters by audience scope — agent_operational sees itself and more public", () => {
     const objects: ParsedObject[] = [
       { data: { id: "a", privacy_scope: "owner_private" }, file: "test" },
       { data: { id: "b", privacy_scope: "public_safe" }, file: "test" },
       { data: { id: "c", privacy_scope: "agent_operational" }, file: "test" },
+      { data: { id: "d", privacy_scope: "shareable" }, file: "test" },
     ];
     const filtered = filterByAudience(objects, "agent_operational");
-    // owner_private (level 0) and agent_operational (level 1) pass; public_safe (level 4) does not
-    expect(filtered.map((o) => o.data.id)).toEqual(["a", "c"]);
+    // agent_operational(1) sees: agent_operational(1), project_private(2), shareable(3), public_safe(4)
+    // Does NOT see: owner_private(0)
+    expect(filtered.map((o) => o.data.id)).toEqual(["b", "c", "d"]);
+  });
+
+  it("owner_private audience sees everything", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "a", privacy_scope: "owner_private" }, file: "test" },
+      { data: { id: "b", privacy_scope: "public_safe" }, file: "test" },
+    ];
+    const filtered = filterByAudience(objects, "owner_private");
+    expect(filtered).toHaveLength(2);
+  });
+
+  it("public_safe audience sees only public_safe", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "a", privacy_scope: "owner_private" }, file: "test" },
+      { data: { id: "b", privacy_scope: "public_safe" }, file: "test" },
+      { data: { id: "c", privacy_scope: "shareable" }, file: "test" },
+    ];
+    const filtered = filterByAudience(objects, "public_safe");
+    expect(filtered.map((o) => o.data.id)).toEqual(["b"]);
   });
 });
 
@@ -143,9 +164,8 @@ describe("compile", () => {
     });
 
     const result = await compile(store, { audience: "public_safe" });
-    // Public compilation should include both (public_safe sees all lower scopes)
-    // Actually public_safe level = 4, owner_private level = 0, so owner_private passes
+    // public_safe audience should ONLY see public_safe objects, NOT owner_private
     expect(result.bootstrap.memory).toContain("Public fact.");
-    expect(result.bootstrap.memory).toContain("Private secret.");
+    expect(result.bootstrap.memory).not.toContain("Private secret.");
   });
 });
