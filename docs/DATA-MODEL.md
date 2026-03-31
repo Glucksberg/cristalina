@@ -42,7 +42,7 @@ privacy_scope: agent_operational
 actor: fluck
 session_id: hb-072
 project: cristalina
-related_entities: [memory, protocol, openclaw]
+related_entities: [ent-owner, ent-project-cristalina, ent-runtime-openclaw]
 artifacts:
   - reports/2026-03-29-hb72.md
 ```
@@ -215,9 +215,15 @@ Relationships express structured links between entities.
 
 ```yaml
 id: rel-001
-from: user
+kind: relationship
+from_ref:
+  entity_id: ent-owner
+  kind: owner
 relation: prefers
-to: concise_answers
+to_ref:
+  object_id: fact-001
+  kind: fact
+  label: concise_operational_answers
 status: ratified
 confidence: 0.91
 valid_from: 2026-03-29
@@ -226,6 +232,8 @@ source_type: human_reply
 source_ref: proposals/2026-03/daily-curation-2026-03-29.yaml#q2
 privacy_scope: owner_private
 ```
+
+Legacy textual `from` and `to` MAY still appear during migration, but stable references are the target shape.
 
 ### Common `relation` values
 
@@ -315,13 +323,18 @@ Examples:
 
 ```yaml
 id: drv-001
-artifact_type: bootstrap_projection
+artifact_type: bootstrap_memory
 created_at: 2026-03-29T03:20:00Z
 derived_from:
-  - core/ratified/facts.yaml
-  - core/preferences/communication.yaml
-  - core/identity/soul.yaml
-intended_audience: owner_private_runtime
+  - fact-001
+  - val-001
+  - idt-001
+intended_audience: owner_private
+path: compiled/channels/owner_private_dm/bootstrap/MEMORY.md
+projection_id: drv-2026-03-29-000
+projection_profile: deep
+channel: owner_private_dm
+writeback_mode: proposal_extraction
 ```
 
 Derived artifacts MUST NOT be treated as canonical sources by default.
@@ -542,6 +555,7 @@ Implementations MAY choose any stable ID scheme, but SHOULD use readable prefixe
 - `sty-` for style rules
 - `ctr-` for contradictions
 - `drv-` for derived artifacts
+- `ent-` for stable entities
 - `q-` for curation questions
 - `qr-` for curation responses
 

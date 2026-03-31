@@ -19,7 +19,7 @@ This repository provides:
 - the active architecture convergence document
 - the OpenClaw reference adapter
 - the human curation protocol
-- starter schemas for validation
+- generated schemas for validation
 - a sample `.cristalina/` store layout
 - reference packages for types, validation, and core lifecycle work
 
@@ -76,25 +76,26 @@ Read in this order:
 
 If older draft documents and the current repository implementation diverge, `docs/ARCHITECTURE-V2.md` is the active convergence layer for repository work.
 
-## v1 Focus
+## Current v3 Baseline
 
-Cristalina v1 includes:
+The repository already implements:
 - append-only events
-- proposal-based memory promotion
-- ratified canonical core
-- privacy scopes
-- provenance fields
+- structured proposals with stable references
+- ratification normalization into canonical operations
+- provenance-aware promotion policy
+- audience and authority evaluation
+- stable entity and relationship references
 - HOT/WARM/COLD compiled context
 - bootstrap projection
-- OpenClaw adapter
+- channel-profiled runtime projection
+- OpenClaw writeback contract metadata
 
 ## Near-Term Roadmap
 
-- freeze canonical representation
-- redesign proposal and ratification payloads
-- move privacy and authority checks into a policy layer
-- align `packages/core`, `packages/types`, and `packages/validate`
-- harden the OpenClaw adapter contract around runtime drift
+- run full-system v3 review checkpoints before adding more primitives
+- bring docs and example store into parity with the current codepath
+- finish the drift -> proposal extraction loop for runtime-edited projections
+- decide which remaining gaps are still architectural and which are now repo hygiene
 
 ## Governance Files
 
@@ -108,5 +109,5 @@ Cristalina v1 includes:
 ## Repository Status
 
 - Protocol version: `1.0-draft`
-- Repository version: `0.2.0-dev`
-- Maturity: draft / architecture v2 convergence
+- Repository version: `0.3.0-dev`
+- Maturity: active v3 hardening on top of architecture v2 convergence

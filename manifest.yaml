@@ -1,9 +1,9 @@
 name: cristalina
 display_name: Cristalina
 type: memory_protocol
-status: draft
+status: v3-hardening
 protocol_version: 1.0-draft
-repository_version: 0.2.0-dev
+repository_version: 0.3.0-dev
 canonical_language: en
 license: Apache-2.0
 maintainers:
@@ -11,13 +11,13 @@ maintainers:
     role: creator
 modules:
   - name: "@cristalina/types"
-    status: implemented-needs-v2-alignment
+    status: implemented-v3-hardening
   - name: "@cristalina/validate"
-    status: implemented-needs-v2-alignment
+    status: implemented-v3-hardening
   - name: "@cristalina/core"
-    status: prototype-needs-v2-alignment
+    status: implemented-v3-hardening
   - name: cristalina-openclaw
-    status: spec-only
+    status: contract-hardened-partial-implementation
   - name: cristalina-cli
     status: planned
 documents:

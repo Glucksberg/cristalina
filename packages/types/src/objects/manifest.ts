@@ -26,6 +26,7 @@ export const ManifestSchema = z
     documents: z.object({
       spec: z.string().min(1),
       data_model: z.string().min(1),
+      architecture_v2: z.string().min(1),
       curation_protocol: z.string().min(1),
       openclaw_adapter: z.string().min(1),
     }),

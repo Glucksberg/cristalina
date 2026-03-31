@@ -30,7 +30,13 @@ describe("validateManifest", () => {
       manifest: {
         name: "cristalina", display_name: "Cristalina", type: "memory_protocol",
         protocol_version: "1.0-draft",
-        documents: { spec: "docs/SPEC.md", data_model: "docs/DATA-MODEL.md", curation_protocol: "docs/CURATION-PROTOCOL.md", openclaw_adapter: "docs/adapters/OPENCLAW-ADAPTER.md" },
+        documents: {
+          spec: "docs/SPEC.md",
+          data_model: "docs/DATA-MODEL.md",
+          architecture_v2: "docs/ARCHITECTURE-V2.md",
+          curation_protocol: "docs/CURATION-PROTOCOL.md",
+          openclaw_adapter: "docs/adapters/OPENCLAW-ADAPTER.md",
+        },
         schemas: { manifest: "schemas/manifest.schema.json", event: "schemas/event.schema.json", proposal: "schemas/proposal.schema.json", memory_object: "schemas/memory-object.schema.json" },
       },
       manifestFile: "manifest.yaml",

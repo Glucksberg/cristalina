@@ -170,37 +170,23 @@ Recommended layout:
   core/
     ratified/
       facts.yaml
-      projects.yaml
       relationships.yaml
-      constraints.yaml
+      contradictions.yaml
     identity/
       soul.yaml
       style.yaml
-      identity-reflection.yaml
     values/
       values.yaml
-      priorities.yaml
-    preferences/
-      communication.yaml
-      workflows.yaml
-    privacy/
-      scopes.yaml
-      policy.yaml
     narrative/
       story.md
-      arcs.md
-      open_loops.md
-    digests/
-      weekly/
-      monthly/
-      quarterly/
-      yearly/
+    privacy/
+      policy.yaml
 
   compiled/
     hot/
       session-pack.md
     warm/
-      project-pack-*.md
+      extended-context.md
     cold/
       deep-recall-index.yaml
     bootstrap/
@@ -208,6 +194,15 @@ Recommended layout:
       VALUE.md
       USER.md
       MEMORY.md
+    metadata/
+      projection-manifest.yaml
+    channels/
+      <channel>/
+        hot/
+        warm/
+        cold/
+        bootstrap/
+        metadata/
 
   audits/
     validation.log
@@ -549,6 +544,8 @@ Rollback MUST be possible for:
 - bad supersession
 - broken compilation
 - incorrect runtime projection
+
+Implementations that support channel-specific projection SHOULD preserve per-channel namespaces so distinct runtime surfaces do not overwrite one another.
 
 ---
 
