@@ -77,3 +77,34 @@ export const COMPILED_PATHS = {
   bootstrapMemory: "compiled/bootstrap/MEMORY.md",
   projectionManifest: "compiled/metadata/projection-manifest.yaml",
 } as const;
+
+export const CHANNEL_COMPILED_ROOT = "compiled/channels";
+
+export function channelCompiledPath(channel: string, basePath: string): string {
+  const relative = basePath.startsWith("compiled/") ? basePath.slice("compiled/".length) : basePath;
+  return `${CHANNEL_COMPILED_ROOT}/${channel}/${relative}`;
+}
+
+export function namespacedCompiledPaths(channel: string) {
+  return {
+    hot: channelCompiledPath(channel, COMPILED_PATHS.hot),
+    warm: channelCompiledPath(channel, COMPILED_PATHS.warm),
+    cold: channelCompiledPath(channel, COMPILED_PATHS.cold),
+    bootstrapSoul: channelCompiledPath(channel, COMPILED_PATHS.bootstrapSoul),
+    bootstrapValue: channelCompiledPath(channel, COMPILED_PATHS.bootstrapValue),
+    bootstrapUser: channelCompiledPath(channel, COMPILED_PATHS.bootstrapUser),
+    bootstrapMemory: channelCompiledPath(channel, COMPILED_PATHS.bootstrapMemory),
+    projectionManifest: channelCompiledPath(channel, COMPILED_PATHS.projectionManifest),
+  } as const;
+}
+
+export function contractPathForCompiledArtifact(path: string): string {
+  const prefix = `${CHANNEL_COMPILED_ROOT}/`;
+  if (!path.startsWith(prefix)) return path;
+
+  const withoutRoot = path.slice(prefix.length);
+  const slashIndex = withoutRoot.indexOf("/");
+  if (slashIndex === -1) return path;
+
+  return `compiled/${withoutRoot.slice(slashIndex + 1)}`;
+}

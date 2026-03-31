@@ -16,6 +16,7 @@ export {
   EntityKind,
   DerivedArtifactType,
   WritebackMode,
+  ProjectionProfile,
 } from "./enums.js";
 
 // ID patterns

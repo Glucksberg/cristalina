@@ -29,6 +29,14 @@
       "type": "string",
       "minLength": 1
     },
+    "projection_profile": {
+      "type": "string",
+      "enum": [
+        "tiny",
+        "standard",
+        "deep"
+      ]
+    },
     "writeback_mode": {
       "type": "string",
       "enum": [
@@ -94,6 +102,14 @@
             "type": "string",
             "minLength": 1
           },
+          "projection_profile": {
+            "type": "string",
+            "enum": [
+              "tiny",
+              "standard",
+              "deep"
+            ]
+          },
           "writeback_mode": {
             "type": "string",
             "enum": [
@@ -130,6 +146,7 @@
           "source",
           "path",
           "projection_id",
+          "projection_profile",
           "writeback_mode",
           "parsable",
           "checksum"
@@ -242,6 +259,7 @@
     "adapter",
     "generated_at",
     "audience",
+    "projection_profile",
     "writeback_mode",
     "artifacts",
     "contract"

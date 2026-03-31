@@ -168,8 +168,30 @@ describe("compile", () => {
     const manifest = yamlParse(readFileSync(resolve(root, "compiled/metadata/projection-manifest.yaml"), "utf-8")) as Record<string, unknown>;
     expect(manifest.projection_id).toBe(result.metadata.projection_id);
     expect(manifest.writeback_mode).toBe("proposal_extraction");
+    expect(manifest.projection_profile).toBe("deep");
     expect(Array.isArray(manifest.artifacts)).toBe(true);
     expect((manifest.artifacts as Array<Record<string, unknown>>)).toHaveLength(7);
+  });
+
+  it("writes channel-specific projections into namespaced paths and records the profile", async () => {
+    seedObjects();
+
+    const result = await compile(store, { audience: "public_safe", channel: "group_channel" });
+
+    expect(result.metadata.channel).toBe("group_channel");
+    expect(result.metadata.projection_profile).toBe("tiny");
+    expect(existsSync(resolve(root, "compiled/channels/group_channel/bootstrap/MEMORY.md"))).toBe(true);
+    expect(existsSync(resolve(root, "compiled/channels/group_channel/metadata/projection-manifest.yaml"))).toBe(true);
+    expect(existsSync(resolve(root, "compiled/bootstrap/MEMORY.md"))).toBe(false);
+
+    const manifest = yamlParse(
+      readFileSync(resolve(root, "compiled/channels/group_channel/metadata/projection-manifest.yaml"), "utf-8"),
+    ) as Record<string, unknown>;
+    expect(manifest.channel).toBe("group_channel");
+    expect(manifest.projection_profile).toBe("tiny");
+
+    const artifacts = manifest.artifacts as Array<Record<string, unknown>>;
+    expect(artifacts.every((artifact) => String(artifact.path).startsWith("compiled/channels/group_channel/"))).toBe(true);
   });
 
   it("respects privacy scope filtering", async () => {
@@ -228,6 +250,7 @@ describe("buildRuntimeDriftLogInput", () => {
       projection_id: "drv-2026-03-29-001",
       audience: "owner_private",
       channel: "owner_private_dm",
+      projection_profile: "deep",
       diff_summary: "Style block changed by runtime",
     });
 
@@ -236,6 +259,7 @@ describe("buildRuntimeDriftLogInput", () => {
     expect(input.details).toMatchObject({
       path: "compiled/bootstrap/SOUL.md",
       artifact_type: "bootstrap_soul",
+      projection_profile: "deep",
       writeback_mode: "proposal_extraction",
     });
   });

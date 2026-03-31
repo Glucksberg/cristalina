@@ -210,3 +210,12 @@ export const WritebackMode = z.enum([
   "deterministic_sync",
 ]);
 export type WritebackMode = z.infer<typeof WritebackMode>;
+
+// --- Projection Profile (OPENCLAW-ADAPTER.md §13) ---
+
+export const ProjectionProfile = z.enum([
+  "tiny",
+  "standard",
+  "deep",
+]);
+export type ProjectionProfile = z.infer<typeof ProjectionProfile>;

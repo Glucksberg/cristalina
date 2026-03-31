@@ -1,5 +1,5 @@
 import type { ParsedObject } from "@cristalina/validate";
-import type { PrivacyScope } from "@cristalina/types";
+import type { PrivacyScope, ProjectionProfile } from "@cristalina/types";
 import { filterByAudience } from "./scoring.js";
 
 export interface BootstrapFiles {
@@ -14,24 +14,37 @@ export function generateBootstrap(
   coreObjects: ParsedObject[],
   contradictions: ParsedObject[],
   audience: PrivacyScope = "owner_private",
+  profile: ProjectionProfile = "standard",
 ): BootstrapFiles {
   const filtered = filterByAudience(coreObjects, audience);
   const active = filtered.filter((o) =>
     o.data.status === "ratified" || o.data.status === "crystallized",
   );
+  const limits = bootstrapLimits(profile);
 
   return {
-    soul: renderSoul(active),
-    value: renderValue(active),
-    user: renderUser(active),
-    memory: renderMemory(active, contradictions),
+    soul: renderSoul(active, limits),
+    value: renderValue(active, limits),
+    user: renderUser(active, limits),
+    memory: renderMemory(active, contradictions, limits),
   };
 }
 
-function renderSoul(objects: ParsedObject[]): string {
+function bootstrapLimits(profile: ProjectionProfile) {
+  switch (profile) {
+    case "tiny":
+      return { traits: 4, values: 4, prefs: 5, facts: 5, memory: 5, contradictions: 2 };
+    case "deep":
+      return { traits: 16, values: 16, prefs: 20, facts: 20, memory: 12, contradictions: 8 };
+    default:
+      return { traits: 8, values: 8, prefs: 10, facts: 10, memory: 8, contradictions: 4 };
+  }
+}
+
+function renderSoul(objects: ParsedObject[], limits: ReturnType<typeof bootstrapLimits>): string {
   const lines: string[] = ["# SOUL\n"];
 
-  const traits = objects.filter((o) => o.data.kind === "identity_trait");
+  const traits = objects.filter((o) => o.data.kind === "identity_trait").slice(0, limits.traits);
   if (traits.length > 0) {
     for (const obj of traits) {
       lines.push(`- ${obj.data.statement}`);
@@ -40,7 +53,7 @@ function renderSoul(objects: ParsedObject[]): string {
     lines.push("You are a practical personal agent with governed long-term memory.");
   }
 
-  const style = objects.filter((o) => o.data.kind === "style_rule");
+  const style = objects.filter((o) => o.data.kind === "style_rule").slice(0, limits.traits);
   if (style.length > 0) {
     lines.push("\n## Style");
     for (const obj of style) {
@@ -51,10 +64,12 @@ function renderSoul(objects: ParsedObject[]): string {
   return lines.join("\n") + "\n";
 }
 
-function renderValue(objects: ParsedObject[]): string {
+function renderValue(objects: ParsedObject[], limits: ReturnType<typeof bootstrapLimits>): string {
   const lines: string[] = ["# VALUE\n"];
 
-  const values = objects.filter((o) => o.data.kind === "value" || o.data.kind === "priority");
+  const values = objects
+    .filter((o) => o.data.kind === "value" || o.data.kind === "priority")
+    .slice(0, limits.values);
   if (values.length > 0) {
     for (const obj of values) {
       lines.push(`- ${obj.data.statement}`);
@@ -66,10 +81,10 @@ function renderValue(objects: ParsedObject[]): string {
   return lines.join("\n") + "\n";
 }
 
-function renderUser(objects: ParsedObject[]): string {
+function renderUser(objects: ParsedObject[], limits: ReturnType<typeof bootstrapLimits>): string {
   const lines: string[] = ["# USER\n"];
 
-  const prefs = objects.filter((o) => o.data.kind === "preference");
+  const prefs = objects.filter((o) => o.data.kind === "preference").slice(0, limits.prefs);
   if (prefs.length > 0) {
     lines.push("## Preferences");
     for (const obj of prefs) {
@@ -77,7 +92,9 @@ function renderUser(objects: ParsedObject[]): string {
     }
   }
 
-  const facts = objects.filter((o) => o.data.kind === "fact" || o.data.kind === "constraint");
+  const facts = objects
+    .filter((o) => o.data.kind === "fact" || o.data.kind === "constraint")
+    .slice(0, limits.facts);
   if (facts.length > 0) {
     lines.push("\n## Known Facts");
     for (const obj of facts) {
@@ -92,14 +109,18 @@ function renderUser(objects: ParsedObject[]): string {
   return lines.join("\n") + "\n";
 }
 
-function renderMemory(objects: ParsedObject[], contradictions: ParsedObject[]): string {
+function renderMemory(
+  objects: ParsedObject[],
+  contradictions: ParsedObject[],
+  limits: ReturnType<typeof bootstrapLimits>,
+): string {
   const lines: string[] = ["# MEMORY\n"];
 
   // High-confidence recent facts
   const sorted = objects
     .filter((o) => typeof o.data.confidence === "number")
     .sort((a, b) => (b.data.confidence as number) - (a.data.confidence as number))
-    .slice(0, 10);
+    .slice(0, limits.memory);
 
   if (sorted.length > 0) {
     lines.push("## Active Memory");
@@ -109,7 +130,7 @@ function renderMemory(objects: ParsedObject[], contradictions: ParsedObject[]): 
   }
 
   // Open loops
-  const openContradictions = contradictions.filter((c) => c.data.status === "open");
+  const openContradictions = contradictions.filter((c) => c.data.status === "open").slice(0, limits.contradictions);
   if (openContradictions.length > 0) {
     lines.push("\n## Open Loops");
     for (const c of openContradictions) {

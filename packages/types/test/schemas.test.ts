@@ -291,6 +291,7 @@ describe("DerivedArtifactSchema", () => {
       source: "canonical_projection",
       path: "compiled/bootstrap/SOUL.md",
       projection_id: "drv-2026-03-29-000",
+      projection_profile: "deep",
       writeback_mode: "proposal_extraction",
       parsable: true,
       checksum: "abc123",
@@ -328,6 +329,7 @@ describe("ProjectionManifestSchema", () => {
       adapter: "cristalina-openclaw",
       generated_at: "2026-03-29T02:00:00Z",
       audience: "owner_private",
+      projection_profile: "deep",
       writeback_mode: "proposal_extraction",
       artifacts: [{
         id: "drv-2026-03-29-011",
@@ -339,6 +341,7 @@ describe("ProjectionManifestSchema", () => {
         source: "canonical_projection",
         path: "compiled/bootstrap/MEMORY.md",
         projection_id: "drv-2026-03-29-010",
+        projection_profile: "deep",
         writeback_mode: "proposal_extraction",
         parsable: true,
         checksum: "abc123",

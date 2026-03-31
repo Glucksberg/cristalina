@@ -5,10 +5,11 @@ import type {
   DerivedArtifact,
   DerivedArtifactType,
   PrivacyScope,
+  ProjectionProfile,
   ProjectionManifest,
 } from "@cristalina/types";
 import type { LogInput } from "../operations/types.js";
-import { COMPILED_PATHS } from "../store/paths.js";
+import { COMPILED_PATHS, contractPathForCompiledArtifact } from "../store/paths.js";
 
 export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
   adapter: "cristalina-openclaw",
@@ -102,6 +103,7 @@ export interface BuildDerivedArtifactInput {
   generated_by?: string;
   channel?: string;
   projection_id: string;
+  projection_profile: ProjectionProfile;
   path: string;
 }
 
@@ -111,12 +113,14 @@ export interface RuntimeDriftLogArgs {
   projection_id: string;
   audience: PrivacyScope;
   channel?: string;
+  projection_profile: ProjectionProfile;
   diff_summary: string;
   actor?: string;
 }
 
 export function writebackRuleForPath(path: string) {
-  return OPENCLAW_WRITEBACK_CONTRACT.files.find((rule) => rule.path === path) ?? null;
+  const contractPath = contractPathForCompiledArtifact(path);
+  return OPENCLAW_WRITEBACK_CONTRACT.files.find((rule) => rule.path === contractPath) ?? null;
 }
 
 export function checksumForContent(content: string): string {
@@ -139,6 +143,7 @@ export function buildDerivedArtifact(input: BuildDerivedArtifactInput, body: str
     source: "canonical_projection",
     path: input.path,
     projection_id: input.projection_id,
+    projection_profile: input.projection_profile,
     writeback_mode: OPENCLAW_WRITEBACK_CONTRACT.writeback_mode,
     parsable: rule.parsable,
     channel: input.channel,
@@ -160,6 +165,7 @@ export function wrapProjectionContent(options: ProjectionEnvelopeOptions): strin
       channel: artifact.channel,
       generated_at: artifact.created_at,
       projection_id: artifact.projection_id,
+      projection_profile: artifact.projection_profile,
       artifact_id: artifact.id,
       artifact_type: artifact.artifact_type,
       writeback_mode: artifact.writeback_mode,
@@ -182,6 +188,7 @@ export function wrapProjectionContent(options: ProjectionEnvelopeOptions): strin
       channel: artifact.channel,
       generated_at: artifact.created_at,
       projection_id: artifact.projection_id,
+      projection_profile: artifact.projection_profile,
       artifact_id: artifact.id,
       artifact_type: artifact.artifact_type,
       writeback_mode: artifact.writeback_mode,
@@ -198,6 +205,7 @@ export function buildProjectionManifest(
   generated_at: string,
   audience: ProjectionManifest["audience"],
   artifacts: DerivedArtifact[],
+  projection_profile: ProjectionManifest["projection_profile"],
   channel?: string,
 ): ProjectionManifest {
   return {
@@ -206,6 +214,7 @@ export function buildProjectionManifest(
     generated_at,
     audience,
     channel,
+    projection_profile,
     writeback_mode: OPENCLAW_WRITEBACK_CONTRACT.writeback_mode,
     artifacts,
     contract: OPENCLAW_WRITEBACK_CONTRACT,
@@ -227,6 +236,7 @@ export function buildRuntimeDriftLogInput(args: RuntimeDriftLogArgs): LogInput {
       projection_id: args.projection_id,
       audience: args.audience,
       channel: args.channel,
+      projection_profile: args.projection_profile,
       diff_summary: args.diff_summary,
       writeback_mode: OPENCLAW_WRITEBACK_CONTRACT.writeback_mode,
     },

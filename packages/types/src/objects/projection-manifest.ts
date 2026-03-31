@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PrivacyScope, WritebackMode } from "../enums.js";
+import { PrivacyScope, ProjectionProfile, WritebackMode } from "../enums.js";
 import { AdapterWritebackContractSchema } from "./adapter-writeback-contract.js";
 import { DerivedArtifactSchema } from "./derived-artifact.js";
 
@@ -9,6 +9,7 @@ export const ProjectionManifestSchema = z.object({
   generated_at: z.string().datetime(),
   audience: PrivacyScope,
   channel: z.string().min(1).optional(),
+  projection_profile: ProjectionProfile,
   writeback_mode: WritebackMode,
   artifacts: z.array(DerivedArtifactSchema),
   contract: AdapterWritebackContractSchema,

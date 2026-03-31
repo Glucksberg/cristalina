@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   eventFilePath, proposalDirPath, pendingProposalsPath, curationPacketPath,
   coreFilePath, contradictionFilePath, auditLogPath, snapshotDirPath,
+  channelCompiledPath, contractPathForCompiledArtifact,
 } from "../../src/store/paths.js";
 
 describe("paths", () => {
@@ -40,5 +41,15 @@ describe("paths", () => {
 
   it("snapshotDirPath sanitizes timestamp", () => {
     expect(snapshotDirPath("2026-03-29T12:00:00Z")).toBe("backups/snapshots/2026-03-29T120000Z");
+  });
+
+  it("channelCompiledPath namespaces compiled outputs by channel", () => {
+    expect(channelCompiledPath("group_channel", "compiled/bootstrap/MEMORY.md"))
+      .toBe("compiled/channels/group_channel/bootstrap/MEMORY.md");
+  });
+
+  it("contractPathForCompiledArtifact maps namespaced paths back to canonical contract paths", () => {
+    expect(contractPathForCompiledArtifact("compiled/channels/group_channel/bootstrap/MEMORY.md"))
+      .toBe("compiled/bootstrap/MEMORY.md");
   });
 });

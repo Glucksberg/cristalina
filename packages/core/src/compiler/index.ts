@@ -1,12 +1,12 @@
-import type { DerivedArtifact, PrivacyScope } from "@cristalina/types";
+import type { DerivedArtifact, PrivacyScope, ProjectionProfile } from "@cristalina/types";
 import type { CristalinaStore } from "../store/store.js";
-import { COMPILED_PATHS } from "../store/paths.js";
+import { COMPILED_PATHS, namespacedCompiledPaths } from "../store/paths.js";
 import { scoreObject, assignTier, filterByAudience, type ScoredObject } from "./scoring.js";
 import { renderHot } from "./hot.js";
 import { renderWarm } from "./warm.js";
 import { renderCold } from "./cold.js";
 import { generateBootstrap, type BootstrapFiles } from "./bootstrap.js";
-import { writeYamlFile } from "../store/writer.js";
+import { writeYamlFile, ensureDir } from "../store/writer.js";
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import {
@@ -14,12 +14,13 @@ import {
   buildProjectionManifest,
   wrapProjectionContent,
 } from "../adapter/writeback.js";
-import { ensureDir } from "../store/writer.js";
+import { resolveChannelProjectionContext } from "./channel.js";
 
 export interface CompilationOptions {
   audience: PrivacyScope;
   activeProject?: string;
   channel?: string;
+  profile?: ProjectionProfile;
 }
 
 export interface CompiledContext {
@@ -33,6 +34,7 @@ export interface CompiledContext {
     adapter: string;
     audience: PrivacyScope;
     channel?: string;
+    projection_profile: ProjectionProfile;
     writeback_mode: "proposal_extraction";
     hot_count: number;
     warm_count: number;
@@ -48,33 +50,29 @@ export async function compile(
   const snapshot = await store.read();
   const now = store.clock.isoNow();
   const projectionId = store.idGen.next("derivedArtifact");
-  const channel = options.channel ?? `${options.audience}_runtime`;
+  const channelContext = resolveChannelProjectionContext(options.audience, options.channel, options.profile);
+  const channel = channelContext.normalizedChannel;
+  const compiledPaths = namespacedCompiledPaths(channel);
 
-  // Filter by audience
   const filtered = filterByAudience(snapshot.coreObjects, options.audience);
   const visibleContradictions = filterByAudience(snapshot.contradictions, options.audience);
 
-  // Score and assign tiers
   const scored: ScoredObject[] = filtered.map((obj) => {
     const score = scoreObject(obj, now);
     const tier = assignTier(obj, score);
     return { object: obj, score, tier };
   });
 
-  // Sort by score descending within each tier
   scored.sort((a, b) => b.score - a.score);
 
-  const hotObjects = scored.filter((o) => o.tier === "hot");
-  const warmObjects = scored.filter((o) => o.tier === "warm");
-  const coldObjects = scored.filter((o) => o.tier === "cold");
+  const hotObjects = limitTier(scored.filter((o) => o.tier === "hot"), channelContext.profile, "hot");
+  const warmObjects = limitTier(scored.filter((o) => o.tier === "warm"), channelContext.profile, "warm");
+  const coldObjects = limitTier(scored.filter((o) => o.tier === "cold"), channelContext.profile, "cold");
 
-  // Render tiers
   const hot = renderHot(hotObjects, visibleContradictions);
   const warm = renderWarm(warmObjects);
   const cold = renderCold(coldObjects);
-
-  // Generate bootstrap
-  const bootstrap = generateBootstrap(snapshot.coreObjects, visibleContradictions, options.audience);
+  const bootstrap = generateBootstrap(snapshot.coreObjects, visibleContradictions, options.audience, channelContext.profile);
 
   const derivedFrom = [
     ...filtered.map((obj) => String(obj.data.id)).filter((id) => id !== "undefined"),
@@ -83,40 +81,47 @@ export async function compile(
       .filter((id): id is string => id !== null),
   ];
 
+  const contents = {
+    [compiledPaths.hot]: hot,
+    [compiledPaths.warm]: warm,
+    [compiledPaths.cold]: cold,
+    [compiledPaths.bootstrapSoul]: bootstrap.soul,
+    [compiledPaths.bootstrapValue]: bootstrap.value,
+    [compiledPaths.bootstrapUser]: bootstrap.user,
+    [compiledPaths.bootstrapMemory]: bootstrap.memory,
+  } satisfies Record<string, string>;
+
   const artifacts = buildArtifacts({
     store,
     now,
     projectionId,
     audience: options.audience,
     channel,
+    profile: channelContext.profile,
+    paths: compiledPaths,
     derivedFrom,
-    contents: {
-      [COMPILED_PATHS.hot]: hot,
-      [COMPILED_PATHS.warm]: warm,
-      [COMPILED_PATHS.cold]: cold,
-      [COMPILED_PATHS.bootstrapSoul]: bootstrap.soul,
-      [COMPILED_PATHS.bootstrapValue]: bootstrap.value,
-      [COMPILED_PATHS.bootstrapUser]: bootstrap.user,
-      [COMPILED_PATHS.bootstrapMemory]: bootstrap.memory,
-    },
+    contents,
   });
 
   for (const artifact of artifacts) {
-    const raw = artifact.path === COMPILED_PATHS.hot ? hot
-      : artifact.path === COMPILED_PATHS.warm ? warm
-      : artifact.path === COMPILED_PATHS.cold ? cold
-      : artifact.path === COMPILED_PATHS.bootstrapSoul ? bootstrap.soul
-      : artifact.path === COMPILED_PATHS.bootstrapValue ? bootstrap.value
-      : artifact.path === COMPILED_PATHS.bootstrapUser ? bootstrap.user
-      : bootstrap.memory;
-    writeTextFile(store.root, artifact.path, wrapProjectionContent({ artifact, body: raw }));
+    writeTextFile(store.root, artifact.path, wrapProjectionContent({ artifact, body: contents[artifact.path] }));
   }
 
-  writeYamlFile(
-    store.root,
-    COMPILED_PATHS.projectionManifest,
-    buildProjectionManifest(projectionId, now, options.audience, artifacts, channel) as unknown as Record<string, unknown>,
-  );
+  const manifest = buildProjectionManifest(
+    projectionId,
+    now,
+    options.audience,
+    artifacts,
+    channelContext.profile,
+    channel,
+  ) as unknown as Record<string, unknown>;
+
+  writeYamlFile(store.root, compiledPaths.projectionManifest, manifest);
+
+  if (channelContext.useCompatibilityAlias) {
+    writeCompatibilityAlias(store.root, artifacts, contents);
+    writeYamlFile(store.root, COMPILED_PATHS.projectionManifest, manifest);
+  }
 
   store.invalidate();
 
@@ -126,6 +131,7 @@ export async function compile(
     adapter: "cristalina-openclaw",
     audience: options.audience,
     channel,
+    projection_profile: channelContext.profile,
     writeback_mode: "proposal_extraction" as const,
     hot_count: hotObjects.length,
     warm_count: warmObjects.length,
@@ -147,17 +153,19 @@ function buildArtifacts(args: {
   projectionId: string;
   audience: PrivacyScope;
   channel: string;
+  profile: ProjectionProfile;
+  paths: ReturnType<typeof namespacedCompiledPaths>;
   derivedFrom: string[];
   contents: Record<string, string>;
 }): DerivedArtifact[] {
   const artifactOrder = [
-    [COMPILED_PATHS.hot, "compiled_hot"],
-    [COMPILED_PATHS.warm, "compiled_warm"],
-    [COMPILED_PATHS.cold, "compiled_cold"],
-    [COMPILED_PATHS.bootstrapSoul, "bootstrap_soul"],
-    [COMPILED_PATHS.bootstrapValue, "bootstrap_value"],
-    [COMPILED_PATHS.bootstrapUser, "bootstrap_user"],
-    [COMPILED_PATHS.bootstrapMemory, "bootstrap_memory"],
+    [args.paths.hot, "compiled_hot"],
+    [args.paths.warm, "compiled_warm"],
+    [args.paths.cold, "compiled_cold"],
+    [args.paths.bootstrapSoul, "bootstrap_soul"],
+    [args.paths.bootstrapValue, "bootstrap_value"],
+    [args.paths.bootstrapUser, "bootstrap_user"],
+    [args.paths.bootstrapMemory, "bootstrap_memory"],
   ] as const;
 
   return artifactOrder.map(([path, artifact_type]) =>
@@ -169,9 +177,53 @@ function buildArtifacts(args: {
       intended_audience: args.audience,
       channel: args.channel,
       projection_id: args.projectionId,
+      projection_profile: args.profile,
       path,
     }, args.contents[path]),
   );
+}
+
+function tierLimit(profile: ProjectionProfile, tier: "hot" | "warm" | "cold"): number {
+  switch (profile) {
+    case "tiny":
+      return tier === "hot" ? 8 : tier === "warm" ? 6 : 8;
+    case "deep":
+      return tier === "hot" ? 24 : tier === "warm" ? 40 : 60;
+    default:
+      return tier === "hot" ? 14 : tier === "warm" ? 18 : 24;
+  }
+}
+
+function limitTier(objects: ScoredObject[], profile: ProjectionProfile, tier: "hot" | "warm" | "cold"): ScoredObject[] {
+  return objects.slice(0, tierLimit(profile, tier));
+}
+
+function writeCompatibilityAlias(
+  root: string,
+  artifacts: DerivedArtifact[],
+  contents: Record<string, string>,
+): void {
+  const aliasMap = new Map<string, string>([
+    ["compiled_hot", COMPILED_PATHS.hot],
+    ["compiled_warm", COMPILED_PATHS.warm],
+    ["compiled_cold", COMPILED_PATHS.cold],
+    ["bootstrap_soul", COMPILED_PATHS.bootstrapSoul],
+    ["bootstrap_value", COMPILED_PATHS.bootstrapValue],
+    ["bootstrap_user", COMPILED_PATHS.bootstrapUser],
+    ["bootstrap_memory", COMPILED_PATHS.bootstrapMemory],
+  ]);
+
+  for (const artifact of artifacts) {
+    const aliasPath = aliasMap.get(artifact.artifact_type);
+    if (!aliasPath) continue;
+    writeTextFile(root, aliasPath, wrapProjectionContent({
+      artifact: {
+        ...artifact,
+        path: aliasPath,
+      },
+      body: contents[artifact.path],
+    }));
+  }
 }
 
 export { generateBootstrap, type BootstrapFiles } from "./bootstrap.js";
