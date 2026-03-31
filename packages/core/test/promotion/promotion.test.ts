@@ -284,6 +284,87 @@ describe("applyRatification", () => {
     expect(obj!.data.statement).toBe("Default to depth for architecture work.");
   });
 
+  it("accept on confirm keeps CONFIRM planning isolated from edit semantics", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "fact",
+      statement: "The user prefers concise status updates.",
+      status: "candidate",
+      confidence: 0.61,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "revise_fact",
+      operation: "confirm",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        privacy_scope: "owner_private",
+      },
+      reason: "Needs explicit confirmation before crystallizing behavior.",
+      provenance: { supporting_events: [] },
+      confidence: 0.72,
+      privacy_scope: "owner_private",
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "Yes." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.decisions[0].operation).toBe("confirm");
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].operation).toBe("CONFIRM");
+
+    const snapshot = await store.read();
+    const obj = snapshot.coreObjects.find((entry) => entry.data.id === "fact-seed-001");
+    expect(obj!.data.status).toBe("ratified");
+  });
+
+  it("edit on create keeps create semantics while replacing the proposed statement", async () => {
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "new_fact",
+      operation: "create",
+      target_ref: {
+        kind: "fact",
+        facet: "working_style",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "The user likes terse updates.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Initial draft from observation.",
+      provenance: { supporting_events: [] },
+      confidence: 0.67,
+      privacy_scope: "owner_private",
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "edit", answer_text: "The user wants detailed architecture updates." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.decisions[0].operation).toBe("create");
+    expect(result.decisions[0].candidate_payload.statement).toBe("The user wants detailed architecture updates.");
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].operation).toBe("CREATE");
+
+    const snapshot = await store.read();
+    const created = snapshot.coreObjects.find((entry) => entry.data.id === "fact-test-001");
+    expect(created!.data.statement).toBe("The user wants detailed architecture updates.");
+  });
+
   it("reject -> LOG event and marks proposal rejected", async () => {
     await executeOperation(store, {
       op: "PROPOSE",
