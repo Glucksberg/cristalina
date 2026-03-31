@@ -5,8 +5,10 @@ import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { CristalinaStore } from "../../src/store/store.js";
 import { FixedClock } from "../../src/clock/clock.js";
-import { DeterministicIdGenerator } from "../../src/id/generator.js";
-import { appendJsonlLine, appendToYamlItems } from "../../src/store/writer.js";
+import { DefaultIdGenerator, DeterministicIdGenerator } from "../../src/id/generator.js";
+import { appendJsonlLine } from "../../src/store/writer.js";
+import { generateCurationPacket } from "../../src/promotion/curation.js";
+import { executeOperation } from "../../src/operations/index.js";
 
 let root: string;
 let store: CristalinaStore;
@@ -74,6 +76,13 @@ describe("CristalinaStore", () => {
   it("findById locates objects across collections", async () => {
     store.appendJsonl("events/2026-03/2026-03-29.jsonl", { id: "evt-001", kind: "heartbeat", ts: "2026-03-29T12:00:00Z", summary: "t", source_type: "runtime_observation", privacy_scope: "agent_operational" });
     store.appendYamlItem("core/ratified/facts.yaml", { id: "fact-001", statement: "t" });
+    store.writeYaml("proposals/2026-03/daily-curation-2026-03-29.yaml", {
+      packet_id: "dcp-2026-03-29-001",
+      created_at: "2026-03-29T12:00:00Z",
+      owner: "owner",
+      question_count: 0,
+      questions: [],
+    });
 
     const evt = await store.findById("evt-001");
     expect(evt).not.toBeNull();
@@ -82,8 +91,57 @@ describe("CristalinaStore", () => {
     const fact = await store.findById("fact-001");
     expect(fact).not.toBeNull();
 
+    const packet = await store.findById("dcp-2026-03-29-001");
+    expect(packet).not.toBeNull();
+    expect(packet!.data.packet_id).toBe("dcp-2026-03-29-001");
+
     const missing = await store.findById("nope-999");
     expect(missing).toBeNull();
+  });
+
+  it("seeds curation packet IDs from existing packet files", async () => {
+    const seededStore = new CristalinaStore({
+      root,
+      clock: new FixedClock("2026-03-29T12:00:00Z"),
+      idGenerator: new DefaultIdGenerator(new FixedClock("2026-03-29T12:00:00Z")),
+    });
+
+    seededStore.writeYaml("proposals/2026-03/daily-curation-2026-03-29.yaml", {
+      packet_id: "dcp-2026-03-29-001",
+      created_at: "2026-03-29T12:00:00Z",
+      owner: "owner",
+      question_count: 1,
+      questions: [
+        {
+          id: "q-2026-03-29-001",
+          type: "factual_correction",
+          question: "Question?",
+          proposal_refs: ["prop-2026-03-29-001"],
+          priority: "medium",
+        },
+      ],
+    });
+
+    await executeOperation(seededStore, {
+      op: "PROPOSE",
+      type: "new_fact",
+      operation: "create",
+      target_ref: { kind: "fact", facet: "working_style" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "User prefers concise updates.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Test proposal",
+      provenance: { supporting_events: [] },
+      confidence: 0.7,
+      privacy_scope: "owner_private",
+    });
+
+    const snapshot = await seededStore.read();
+    const packet = generateCurationPacket(snapshot, seededStore.clock, seededStore.idGen);
+    expect(packet).not.toBeNull();
+    expect(packet!.data.packet_id).toBe("dcp-2026-03-29-002");
   });
 
   it("refresh forces a fresh read", async () => {

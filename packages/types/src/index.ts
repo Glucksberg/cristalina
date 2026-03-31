@@ -30,6 +30,7 @@ export {
   QuestionId,
   QuestionResponseId,
   CurationPacketId,
+  CanonicalObjectId,
   AnyObjectId,
 } from "./ids.js";
 

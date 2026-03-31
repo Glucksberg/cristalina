@@ -139,6 +139,29 @@ describe("ProposalSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects non-canonical target object IDs", () => {
+    const result = ProposalSchema.safeParse({
+      id: "prop-001",
+      type: "revise_fact",
+      operation: "revise",
+      target_ref: {
+        object_id: "evt-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Updated statement",
+        privacy_scope: "owner_private",
+      },
+      reason: "test",
+      provenance: { supporting_events: ["evt-001"] },
+      confidence: 0.7,
+      status: "pending",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("MemoryObjectSchema", () => {

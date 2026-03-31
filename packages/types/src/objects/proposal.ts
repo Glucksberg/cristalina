@@ -6,14 +6,14 @@ import {
   PrivacyScope,
   MemoryObjectKind,
 } from "../enums.js";
-import { AnyObjectId, EventId, ProposalId } from "../ids.js";
+import { CanonicalObjectId, EventId, ProposalId } from "../ids.js";
 import { Confidence } from "../shared/confidence.js";
 
 const RiskLevel = z.enum(["low", "medium", "high", "critical"]);
 
 export const ProposalTargetRefSchema = z
   .object({
-    object_id: AnyObjectId.optional(),
+    object_id: CanonicalObjectId.optional(),
     kind: MemoryObjectKind.optional(),
     facet: z.string().min(1).optional(),
   })
@@ -30,7 +30,7 @@ export const ProposalCandidatePayloadSchema = z
     privacy_scope: PrivacyScope.optional(),
     tags: z.array(z.string().min(1)).optional(),
     related_entities: z.array(z.string().min(1)).optional(),
-    related_object_id: AnyObjectId.optional(),
+    related_object_id: CanonicalObjectId.optional(),
     notes: z.string().min(1).optional(),
   })
   .strict();

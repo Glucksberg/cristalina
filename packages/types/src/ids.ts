@@ -56,6 +56,16 @@ export type QuestionResponseId = z.infer<typeof QuestionResponseId>;
 export const CurationPacketId = z.string().regex(/^dcp-/, "Curation packet ID must start with 'dcp-'");
 export type CurationPacketId = z.infer<typeof CurationPacketId>;
 
+// Canonical memory object IDs only
+export const CanonicalObjectId = z.union([
+  FactId,
+  RelationshipId,
+  ValueId,
+  IdentityTraitId,
+  StyleRuleId,
+]);
+export type CanonicalObjectId = z.infer<typeof CanonicalObjectId>;
+
 // Generic memory object ID (any valid prefix)
 const ALL_PREFIXES = Object.values(ID_PREFIXES);
 export const AnyObjectId = z.string().refine(

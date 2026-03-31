@@ -5,7 +5,7 @@ export { CristalinaStore, type StoreOptions } from "./store/store.js";
 export {
   type OperationInput, type OperationResult, type StoreEffect,
   type PlanResult, type AuditEntry,
-  type LogInput, type ProposeInput, type ConfirmInput, type ReviseInput,
+  type LogInput, type ProposeInput, type CreateInput, type ConfirmInput, type ReviseInput,
   type ExtendInput, type ContradictInput, type SupersedeInput,
   type DeprecateInput, type CrystallizeInput, type ArchiveInput,
 } from "./operations/types.js";

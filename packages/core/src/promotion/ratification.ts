@@ -64,27 +64,35 @@ function isPrivacyScope(value: unknown): value is PrivacyScopeType {
 function normalizeDecision(
   proposal: ParsedObject,
   response: CurationResponse,
+  targetObject: ParsedObject | null,
 ): NormalizedDecision {
   const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
-  const operation = typeof proposal.data.operation === "string" ? proposal.data.operation : "create";
+  let operation = typeof proposal.data.operation === "string" ? proposal.data.operation : "create";
   const targetRef = getRecord(proposal.data.target_ref) ?? {};
   const candidatePayload = {
     ...(getRecord(proposal.data.candidate_payload) ?? {}),
   };
+  const editedText = response.answer_text.trim();
+  const currentStatement = typeof targetObject?.data.statement === "string"
+    ? targetObject.data.statement
+    : null;
 
   if (
     response.answer_type === "edit"
-    && response.answer_text.trim().length > 0
-    && typeof candidatePayload.statement === "string"
+    && editedText.length > 0
   ) {
-    candidatePayload.statement = response.answer_text.trim();
+    candidatePayload.statement = editedText;
+
+    if (operation === "confirm" && currentStatement !== null && editedText !== currentStatement) {
+      operation = "revise";
+    }
   }
 
   return {
     question_ref: response.question_ref,
     proposal_id: proposalId,
     answer_type: response.answer_type,
-    answer_text: response.answer_text.trim(),
+    answer_text: editedText,
     operation,
     target_ref: targetRef,
     candidate_payload: candidatePayload,
@@ -307,7 +315,13 @@ export async function applyRatification(
       continue;
     }
 
-    const decision = normalizeDecision(proposal, response);
+    const targetObjectId = typeof proposal.data.target_ref === "object" && proposal.data.target_ref !== null
+      && typeof (proposal.data.target_ref as Record<string, unknown>).object_id === "string"
+      ? (proposal.data.target_ref as Record<string, unknown>).object_id as string
+      : null;
+    const targetObject = targetObjectId ? await store.findById(targetObjectId) : null;
+
+    const decision = normalizeDecision(proposal, response, targetObject);
     const plan = buildOperationPlan(proposal, decision);
 
     decisions.push(decision);

@@ -38,7 +38,7 @@
       "properties": {
         "object_id": {
           "type": "string",
-          "pattern": "^(evt-|prop-|fact-|rel-|val-|idt-|sty-|ctr-|drv-|q-(?!r)|qr-|dcp-)"
+          "pattern": "^(fact-|rel-|val-|idt-|sty-)"
         },
         "kind": {
           "type": "string",
@@ -116,7 +116,7 @@
         },
         "related_object_id": {
           "type": "string",
-          "pattern": "^(evt-|prop-|fact-|rel-|val-|idt-|sty-|ctr-|drv-|q-(?!r)|qr-|dcp-)"
+          "pattern": "^(fact-|rel-|val-|idt-|sty-)"
         },
         "notes": {
           "type": "string",

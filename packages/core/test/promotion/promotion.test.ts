@@ -240,6 +240,50 @@ describe("applyRatification", () => {
     expect(obj!.data.statement).toBe("Actually, I prefer depth.");
   });
 
+  it("edit on confirm -> REVISE when human meaning changes the statement", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "preference",
+      statement: "Keep concise answers.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "revise_preference",
+      operation: "confirm",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "preference",
+      },
+      candidate_payload: {
+        kind: "preference",
+        privacy_scope: "owner_private",
+      },
+      reason: "Needs owner confirmation.",
+      provenance: { supporting_events: [] },
+      confidence: 0.85,
+      privacy_scope: "owner_private",
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "edit", answer_text: "Default to depth for architecture work." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.decisions[0].operation).toBe("revise");
+    expect(result.applied).toHaveLength(1);
+    expect(result.applied[0].operation).toBe("REVISE");
+
+    const snapshot = await store.read();
+    const obj = snapshot.coreObjects.find((entry) => entry.data.id === "fact-seed-001");
+    expect(obj!.data.statement).toBe("Default to depth for architecture work.");
+  });
+
   it("reject -> LOG event and marks proposal rejected", async () => {
     await executeOperation(store, {
       op: "PROPOSE",
