@@ -13,6 +13,12 @@ import type {
   NormalizedDecision,
 } from "./ratification-types.js";
 import { assertProposalTypeSemantics, requireProposalType } from "./proposal-type-policy.js";
+import {
+  approvalReasonsForProposal,
+  getProposalPolicyTags,
+  getSupportingEvents,
+  requiresHumanApproval,
+} from "./policy.js";
 
 interface DecisionSeed {
   proposalId: string;
@@ -31,6 +37,8 @@ interface NormalizationContext {
 
 interface PlanningContext {
   proposalId: string;
+  proposalType: ProposalTypeType;
+  proposalOperation: ProposalOperationType;
   targetId: string | null;
   payload: Record<string, unknown>;
   kind: MemoryObjectKindType;
@@ -39,6 +47,10 @@ interface PlanningContext {
   privacyScope: PrivacyScopeType | null;
   sourceRef: string;
   reason: string;
+  policyTags: string[];
+  supportingEvents: string[];
+  approvalReasons: string[];
+  requiresExplicitApproval: boolean;
   tags?: string[];
   relatedEntities?: string[];
   notes?: string;
@@ -75,7 +87,7 @@ function buildDecisionSeed(
   targetObject: ParsedObject | null,
 ): DecisionSeed {
   const proposalId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
-  const proposalType = requireProposalType(proposal.data.type, `Proposal ${proposalId}`) as ProposalTypeType;
+  const proposalType = requireProposalType(proposal.data.type, `Proposal ${proposalId}`);
   const operation = isProposalOperation(proposal.data.operation)
     ? proposal.data.operation
     : "create";
@@ -139,9 +151,13 @@ function withEditedStatement(context: NormalizationContext, operation = context.
 
 function buildPlanningContext(proposal: ParsedObject, decision: NormalizedDecision): PlanningContext {
   const payload = decision.candidate_payload;
+  const proposalId = decision.proposal_id;
+  const proposalType = requireProposalType(proposal.data.type, `Proposal ${proposalId}`);
 
   return {
-    proposalId: decision.proposal_id,
+    proposalId,
+    proposalType,
+    proposalOperation: isProposalOperation(proposal.data.operation) ? proposal.data.operation : decision.operation,
     targetId: typeof decision.target_ref.object_id === "string"
       ? decision.target_ref.object_id
       : null,
@@ -157,7 +173,11 @@ function buildPlanningContext(proposal: ParsedObject, decision: NormalizedDecisi
     sourceRef: buildSourceRef(decision.question_ref),
     reason: typeof proposal.data.reason === "string"
       ? proposal.data.reason
-      : `Ratified ${decision.proposal_id}`,
+      : `Ratified ${proposalId}`,
+    policyTags: getProposalPolicyTags(proposal),
+    supportingEvents: getSupportingEvents(proposal),
+    approvalReasons: approvalReasonsForProposal(proposal),
+    requiresExplicitApproval: requiresHumanApproval(proposal),
     tags: Array.isArray(payload.tags)
       ? payload.tags.filter((tag): tag is string => typeof tag === "string")
       : undefined,
@@ -165,6 +185,35 @@ function buildPlanningContext(proposal: ParsedObject, decision: NormalizedDecisi
       ? payload.related_entities.filter((entity): entity is string => typeof entity === "string")
       : undefined,
     notes: typeof payload.notes === "string" ? payload.notes : undefined,
+  };
+}
+
+function buildRatificationAuditLog(
+  context: PlanningContext,
+  decision: NormalizedDecision,
+  proposalStatus: CanonicalOperationPlan["proposal_status"],
+): OperationInput {
+  return {
+    op: "LOG",
+    kind: "ratification_applied",
+    summary: `${proposalStatus} proposal ${context.proposalId} (${context.proposalType}/${context.proposalOperation} -> ${decision.operation})`,
+    source_type: "human_reply",
+    privacy_scope: "owner_private",
+    actor: "owner",
+    tags: context.policyTags.length > 0 ? context.policyTags : undefined,
+    details: {
+      question_ref: decision.question_ref,
+      answer_type: decision.answer_type,
+      answer_text: decision.answer_text,
+      proposal_type: context.proposalType,
+      proposal_operation: context.proposalOperation,
+      applied_operation: decision.operation,
+      supporting_events: context.supportingEvents,
+      supporting_event_count: context.supportingEvents.length,
+      policy_tags: context.policyTags,
+      approval_reasons: context.approvalReasons,
+      requires_human_approval: context.requiresExplicitApproval,
+    },
   };
 }
 
@@ -301,7 +350,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
 };
 
 function buildNonAppliedPlan(proposal: ParsedObject, decision: NormalizedDecision): CanonicalOperationPlan {
-  const reason = typeof proposal.data.reason === "string" ? proposal.data.reason : `Ratified ${decision.proposal_id}`;
+  const context = buildPlanningContext(proposal, decision);
 
   switch (decision.answer_type) {
     case "reject":
@@ -309,14 +358,7 @@ function buildNonAppliedPlan(proposal: ParsedObject, decision: NormalizedDecisio
         question_ref: decision.question_ref,
         proposal_id: decision.proposal_id,
         proposal_status: "rejected",
-        operations: [{
-          op: "LOG",
-          kind: "ratification_applied",
-          summary: `Rejected proposal ${decision.proposal_id}: ${decision.answer_text || reason}`,
-          source_type: "human_reply",
-          privacy_scope: "owner_private",
-          actor: "owner",
-        }],
+        operations: [buildRatificationAuditLog(context, decision, "rejected")],
       };
 
     case "defer":
@@ -325,14 +367,11 @@ function buildNonAppliedPlan(proposal: ParsedObject, decision: NormalizedDecisio
         question_ref: decision.question_ref,
         proposal_id: decision.proposal_id,
         proposal_status: decision.answer_type === "defer" ? "deferred" : "pending",
-        operations: [{
-          op: "LOG",
-          kind: "ratification_applied",
-          summary: `${decision.answer_type} on proposal ${decision.proposal_id}: ${decision.answer_text || decision.question_ref}`,
-          source_type: "human_reply",
-          privacy_scope: "owner_private",
-          actor: "owner",
-        }],
+        operations: [buildRatificationAuditLog(
+          context,
+          decision,
+          decision.answer_type === "defer" ? "deferred" : "pending",
+        )],
       };
 
     default:
@@ -362,6 +401,9 @@ export function buildOperationPlan(
     question_ref: decision.question_ref,
     proposal_id: decision.proposal_id,
     proposal_status: "applied",
-    operations: OPERATION_HANDLERS[decision.operation].buildOperations(context),
+    operations: [
+      buildRatificationAuditLog(context, decision, "applied"),
+      ...OPERATION_HANDLERS[decision.operation].buildOperations(context),
+    ],
   };
 }

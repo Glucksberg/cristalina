@@ -209,8 +209,9 @@ describe("applyRatification", () => {
       questionToProposal: new Map([["q-001", "prop-test-001"]]),
     });
 
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].operation).toBe("SUPERSEDE");
+    expect(result.applied).toHaveLength(2);
+    expect(result.applied[0].operation).toBe("LOG");
+    expect(result.applied[1].operation).toBe("SUPERSEDE");
     expect(result.plans[0].proposal_status).toBe("applied");
 
     const snapshot = await store.read();
@@ -259,8 +260,9 @@ describe("applyRatification", () => {
       questionToProposal: new Map([["q-001", "prop-test-001"]]),
     });
 
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].operation).toBe("REVISE");
+    expect(result.applied).toHaveLength(2);
+    expect(result.applied[0].operation).toBe("LOG");
+    expect(result.applied[1].operation).toBe("REVISE");
     expect(result.decisions[0].candidate_payload.statement).toBe("Actually, I prefer depth.");
 
     const snapshot = await store.read();
@@ -304,8 +306,9 @@ describe("applyRatification", () => {
     });
 
     expect(result.decisions[0].operation).toBe("revise");
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].operation).toBe("REVISE");
+    expect(result.applied).toHaveLength(2);
+    expect(result.applied[0].operation).toBe("LOG");
+    expect(result.applied[1].operation).toBe("REVISE");
 
     const snapshot = await store.read();
     const obj = snapshot.coreObjects.find((entry) => entry.data.id === "fact-seed-001");
@@ -348,8 +351,9 @@ describe("applyRatification", () => {
     });
 
     expect(result.decisions[0].operation).toBe("confirm");
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].operation).toBe("CONFIRM");
+    expect(result.applied).toHaveLength(2);
+    expect(result.applied[0].operation).toBe("LOG");
+    expect(result.applied[1].operation).toBe("CONFIRM");
 
     const snapshot = await store.read();
     const obj = snapshot.coreObjects.find((entry) => entry.data.id === "fact-seed-001");
@@ -385,8 +389,9 @@ describe("applyRatification", () => {
 
     expect(result.decisions[0].operation).toBe("create");
     expect(result.decisions[0].candidate_payload.statement).toBe("The user wants detailed architecture updates.");
-    expect(result.applied).toHaveLength(1);
-    expect(result.applied[0].operation).toBe("CREATE");
+    expect(result.applied).toHaveLength(2);
+    expect(result.applied[0].operation).toBe("LOG");
+    expect(result.applied[1].operation).toBe("CREATE");
 
     const snapshot = await store.read();
     const created = snapshot.coreObjects.find((entry) => entry.data.id === "fact-test-001");
@@ -471,5 +476,55 @@ describe("applyRatification", () => {
       ],
       questionToProposal: new Map([["q-001", "prop-bad-001"]]),
     })).rejects.toThrow('Proposal prop-bad-001 uses incompatible operation "create" for proposal type "open_contradiction"');
+  });
+
+  it("records provenance and policy tags in ratification audit logs", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "preference",
+      statement: "Keep concise answers.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "privacy_change",
+      operation: "revise",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "preference",
+      },
+      candidate_payload: {
+        kind: "preference",
+        statement: "Never mention internal repository names in shareable contexts.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Privacy boundary needs explicit reinforcement.",
+      provenance: { supporting_events: [] },
+      confidence: 0.62,
+      privacy_scope: "owner_private",
+      policy_tags: ["privacy", "sharing"],
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "Yes." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.applied[0].operation).toBe("LOG");
+    const logEffect = result.applied[0].effects[0] as { data: Record<string, unknown> };
+    const details = logEffect.data.details as Record<string, unknown>;
+    expect(details.policy_tags).toEqual(["privacy", "sharing"]);
+    expect(details.supporting_event_count).toBe(0);
+    expect(details.approval_reasons).toEqual(expect.arrayContaining([
+      "high_risk_type:privacy_change",
+      "sensitive_policy_tag:privacy",
+      "sensitive_policy_tag:sharing",
+      "thin_provenance",
+    ]));
   });
 });

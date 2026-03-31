@@ -3,7 +3,7 @@ import type { MemoryObjectKind as MemoryObjectKindType } from "@cristalina/types
 import type { Clock } from "../clock/clock.js";
 import type { IdGenerator } from "../id/generator.js";
 import { curationPacketPath } from "../store/paths.js";
-import { requiresHumanApproval, type PromotionPolicy, DEFAULT_POLICY } from "./policy.js";
+import { approvalReasonsForProposal, requiresHumanApproval, type PromotionPolicy, DEFAULT_POLICY } from "./policy.js";
 import { questionClassForProposalType, requireProposalType } from "./proposal-type-policy.js";
 
 export interface CurationQuestion {
@@ -66,8 +66,11 @@ function proposalTargetLabel(proposal: ParsedObject): string {
 function scoreProposal(proposal: ParsedObject, policy: PromotionPolicy): number {
   let score = 0;
   const risk = getRisk(proposal);
+  const approvalReasons = approvalReasonsForProposal(proposal, policy);
 
   if (requiresHumanApproval(proposal, policy)) score += 30;
+  if (approvalReasons.includes("thin_provenance")) score += 10;
+  score += approvalReasons.filter((reason) => reason.startsWith("sensitive_policy_tag:")).length * 5;
 
   if (risk.level === "critical") score += 25;
   else if (risk.level === "high") score += 20;
