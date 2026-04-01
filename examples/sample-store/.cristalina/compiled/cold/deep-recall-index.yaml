@@ -10,7 +10,5 @@ projection_metadata:
   artifact_type: compiled_cold
   writeback_mode: proposal_extraction
   parsable: false
-  checksum: e09d52b3eb2faf997e12b115f9332b4cc9fc143dc038f280ee5c529c17b49e47
-cold_index:
-  - score: 0
-    file: core/privacy/policy.yaml
+  checksum: 7d47fc8dcd3d696806be9bee41c807f83a7e5b84e3c0b5bba4a2e2c108ffc288
+cold_index: []

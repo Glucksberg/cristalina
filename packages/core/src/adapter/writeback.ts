@@ -8,8 +8,10 @@ import type {
   ProjectionProfile,
   ProjectionManifest,
 } from "@cristalina/types";
-import type { LogInput } from "../operations/types.js";
+import type { LogInput, ProposeInput, OperationResult } from "../operations/types.js";
 import { COMPILED_PATHS, contractPathForCompiledArtifact } from "../store/paths.js";
+import type { CristalinaStore } from "../store/store.js";
+import { executeOperation } from "../operations/index.js";
 
 export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
   adapter: "cristalina-openclaw",
@@ -116,6 +118,16 @@ export interface RuntimeDriftLogArgs {
   projection_profile: ProjectionProfile;
   diff_summary: string;
   actor?: string;
+}
+
+export interface IngestProjectionDriftInput extends RuntimeDriftLogArgs {
+  previous_content: string;
+  current_content: string;
+}
+
+export interface DriftIngestResult {
+  driftEvent: OperationResult;
+  proposals: OperationResult[];
 }
 
 export function writebackRuleForPath(path: string) {
@@ -241,4 +253,252 @@ export function buildRuntimeDriftLogInput(args: RuntimeDriftLogArgs): LogInput {
       writeback_mode: OPENCLAW_WRITEBACK_CONTRACT.writeback_mode,
     },
   };
+}
+
+function stripFrontmatter(content: string): string {
+  if (!content.startsWith("---")) return content;
+  const end = content.indexOf("\n---", 3);
+  if (end === -1) return content;
+  return content.slice(end + 4).trimStart();
+}
+
+function normalizeSectionName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function extractSectionStatements(
+  artifactType: DerivedArtifactType,
+  sectionName: string,
+  content: string,
+): string[] {
+  const body = stripFrontmatter(content);
+  const lines = body.split(/\r?\n/);
+  const target = normalizeSectionName(sectionName);
+  const statements: string[] = [];
+  let inSection = false;
+  let beforeFirstSection = false;
+
+  if (artifactType === "bootstrap_soul" && target === "identity") {
+    beforeFirstSection = true;
+  }
+  if (artifactType === "bootstrap_value" && target === "values") {
+    beforeFirstSection = true;
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line.startsWith("# ")) {
+      inSection = beforeFirstSection;
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      inSection = normalizeSectionName(line.slice(3)) === target;
+      beforeFirstSection = false;
+      continue;
+    }
+    if (!inSection || !line.startsWith("- ")) continue;
+    statements.push(line.slice(2).trim());
+  }
+
+  return [...new Set(statements)];
+}
+
+function diffSummary(previousStatements: string[], currentStatements: string[]): string {
+  const previous = new Set(previousStatements);
+  const current = new Set(currentStatements);
+  const added = currentStatements.filter((statement) => !previous.has(statement));
+  const removed = previousStatements.filter((statement) => !current.has(statement));
+  return `added ${added.length}, removed ${removed.length}`;
+}
+
+function sectionKind(sectionName: string): "identity_trait" | "style_rule" | "value" | "preference" | "fact" | "constraint" {
+  switch (sectionName) {
+    case "identity":
+      return "identity_trait";
+    case "style":
+      return "style_rule";
+    case "values":
+      return "value";
+    case "preferences":
+      return "preference";
+    case "open_loops":
+      return "constraint";
+    default:
+      return "fact";
+  }
+}
+
+function proposalTypeForKind(
+  kind: ReturnType<typeof sectionKind>,
+  operation: "create" | "confirm" | "deprecate",
+): ProposeInput["type"] {
+  if (kind === "value") return operation === "create" ? "new_value" : "revise_value";
+  if (kind === "identity_trait" || kind === "style_rule") {
+    return operation === "deprecate" ? "deprecate_memory" : "identity_adjustment";
+  }
+  if (kind === "preference") {
+    if (operation === "create") return "new_fact";
+    return "revise_preference";
+  }
+  if (operation === "deprecate") return "deprecate_memory";
+  return operation === "confirm" ? "revise_fact" : "new_fact";
+}
+
+function policyTagsForKind(kind: ReturnType<typeof sectionKind>): string[] | undefined {
+  if (kind === "identity_trait" || kind === "style_rule") return ["identity"];
+  if (kind === "value") return ["values"];
+  return undefined;
+}
+
+function riskForKind(kind: ReturnType<typeof sectionKind>): ProposeInput["risk"] | undefined {
+  if (kind === "identity_trait" || kind === "style_rule") {
+    return { level: "high", requires_human_approval: true };
+  }
+  if (kind === "value") {
+    return { level: "high", requires_human_approval: true };
+  }
+  return { level: "medium", requires_human_approval: true };
+}
+
+function defaultTargetRef(
+  storeSnapshot: Awaited<ReturnType<CristalinaStore["read"]>>,
+  kind: ReturnType<typeof sectionKind>,
+  sectionName: string,
+): ProposeInput["target_ref"] {
+  if (kind === "identity_trait" || kind === "style_rule") {
+    const agent = storeSnapshot.entities.find((entity) => entity.data.kind === "agent");
+    if (agent && typeof agent.data.id === "string") {
+      return {
+        entity_id: agent.data.id,
+        kind: "agent",
+        facet: sectionName,
+      };
+    }
+  }
+
+  const owner = storeSnapshot.entities.find((entity) => entity.data.kind === "owner");
+  if (owner && typeof owner.data.id === "string") {
+    return {
+      entity_id: owner.data.id,
+      kind: "owner",
+      facet: sectionName,
+    };
+  }
+
+  return { kind, facet: sectionName };
+}
+
+function findExistingObject(
+  storeSnapshot: Awaited<ReturnType<CristalinaStore["read"]>>,
+  kind: ReturnType<typeof sectionKind>,
+  statement: string,
+) {
+  return storeSnapshot.coreObjects.find((obj) =>
+    obj.data.kind === kind
+    && obj.data.statement === statement
+    && obj.data.status !== "deprecated"
+    && obj.data.status !== "archived");
+}
+
+export async function ingestProjectionDrift(
+  store: CristalinaStore,
+  input: IngestProjectionDriftInput,
+): Promise<DriftIngestResult> {
+  const rule = writebackRuleForPath(input.path);
+  if (!rule) {
+    throw new Error(`No writeback contract rule defined for ${input.path}`);
+  }
+
+  const summary = diffSummary(
+    rule.machine_extractable_sections.flatMap((section) => extractSectionStatements(rule.artifact_type, section, input.previous_content)),
+    rule.machine_extractable_sections.flatMap((section) => extractSectionStatements(rule.artifact_type, section, input.current_content)),
+  );
+
+  const driftEvent = await executeOperation(store, buildRuntimeDriftLogInput({
+    path: input.path,
+    artifact_type: input.artifact_type,
+    projection_id: input.projection_id,
+    audience: input.audience,
+    channel: input.channel,
+    projection_profile: input.projection_profile,
+    diff_summary: `${input.diff_summary}; ${summary}`,
+    actor: input.actor,
+  }));
+
+  const proposals: OperationResult[] = [];
+  if (!rule.parsable || rule.machine_extractable_sections.length === 0) {
+    return { driftEvent, proposals };
+  }
+
+  const snapshot = await store.read();
+  const supportingEventId = driftEvent.produced[0];
+
+  for (const section of rule.machine_extractable_sections) {
+    const before = extractSectionStatements(rule.artifact_type, section, input.previous_content);
+    const after = extractSectionStatements(rule.artifact_type, section, input.current_content);
+    const kind = sectionKind(section);
+
+    const previousSet = new Set(before);
+    const currentSet = new Set(after);
+    const added = after.filter((statement) => !previousSet.has(statement));
+    const removed = before.filter((statement) => !currentSet.has(statement));
+
+    for (const statement of added) {
+      const existing = findExistingObject(snapshot, kind, statement);
+      const operation: ProposeInput["operation"] = existing ? "confirm" : "create";
+      const target_ref = existing && typeof existing.data.id === "string"
+        ? { object_id: existing.data.id, kind, facet: section }
+        : defaultTargetRef(snapshot, kind, section);
+      const proposal = await executeOperation(store, {
+        op: "PROPOSE",
+        type: proposalTypeForKind(kind, operation),
+        operation,
+        target_ref,
+        candidate_payload: {
+          kind,
+          statement,
+          privacy_scope: input.audience,
+        },
+        reason: `Runtime drift extracted from ${input.path} section ${section}`,
+        provenance: { supporting_events: supportingEventId ? [supportingEventId] : [] },
+        confidence: rule.default_confidence,
+        privacy_scope: input.audience,
+        actor: input.actor ?? OPENCLAW_WRITEBACK_CONTRACT.adapter,
+        policy_tags: policyTagsForKind(kind),
+        risk: riskForKind(kind),
+      });
+      proposals.push(proposal);
+    }
+
+    for (const statement of removed) {
+      const existing = findExistingObject(snapshot, kind, statement);
+      if (!existing || typeof existing.data.id !== "string") continue;
+
+      const proposal = await executeOperation(store, {
+        op: "PROPOSE",
+        type: proposalTypeForKind(kind, "deprecate"),
+        operation: "deprecate",
+        target_ref: {
+          object_id: existing.data.id,
+          kind,
+          facet: section,
+        },
+        candidate_payload: {
+          kind,
+          statement,
+          privacy_scope: input.audience,
+        },
+        reason: `Runtime drift removed "${statement}" from ${input.path} section ${section}`,
+        provenance: { supporting_events: supportingEventId ? [supportingEventId] : [] },
+        confidence: rule.default_confidence,
+        privacy_scope: input.audience,
+        actor: input.actor ?? OPENCLAW_WRITEBACK_CONTRACT.adapter,
+        policy_tags: policyTagsForKind(kind),
+        risk: riskForKind(kind),
+      });
+      proposals.push(proposal);
+    }
+  }
+
+  return { driftEvent, proposals };
 }

@@ -1,0 +1,8 @@
+id: pol-authority-default
+kind: authority_policy
+high_risk_kinds: [value, priority, identity_trait, style_rule]
+restricted_kinds: [value, priority, identity_trait, style_rule]
+trusted_owner_channel_prefixes: [owner_private, project_private]
+metadata:
+  version: 1
+  updated_at: "2026-03-29T02:00:00Z"

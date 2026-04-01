@@ -4,6 +4,7 @@ import type { IdGenerator, PrefixKey } from "../id/generator.js";
 import type { CreateInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
 import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
+import { resolveAuthorityPolicy } from "../policy/resolver.js";
 
 const KIND_TO_PREFIX: Record<string, PrefixKey> = {
   fact: "fact",
@@ -25,11 +26,13 @@ export function planCreate(
   idGen: IdGenerator,
 ): PlanResult {
   const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  const authorityPolicy = resolveAuthorityPolicy(_store);
   enforceAuthority({
     operation: "CREATE",
     kind: input.kind,
     targetId: `${input.kind}:new`,
     authority,
+    policy: authorityPolicy,
   });
 
   const ts = clock.isoNow();

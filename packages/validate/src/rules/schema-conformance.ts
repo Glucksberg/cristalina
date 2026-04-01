@@ -8,6 +8,8 @@ import {
   IdentityTraitSchema,
   StyleRuleSchema,
   ContradictionSchema,
+  EntitySchema,
+  PolicyObjectSchema,
 } from "@cristalina/types";
 import type { Diagnostic } from "../diagnostics.js";
 import { error } from "../diagnostics.js";
@@ -71,6 +73,16 @@ export function schemaConformance(store: ParsedStore): Diagnostic[] {
   // Validate contradictions
   for (const obj of store.contradictions) {
     validateObject(obj, ContradictionSchema, "contradiction", diagnostics);
+  }
+
+  // Validate entities
+  for (const obj of store.entities) {
+    validateObject(obj, EntitySchema, "entity", diagnostics);
+  }
+
+  // Validate policy objects
+  for (const obj of store.policyObjects) {
+    validateObject(obj, PolicyObjectSchema, "policy-object", diagnostics);
   }
 
   return diagnostics;

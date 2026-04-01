@@ -11,6 +11,8 @@ function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
     proposals: [],
     curationPackets: [],
     coreObjects: [],
+    entities: [],
+    policyObjects: [],
     contradictions: [],
     files: [],
     parseErrors: [],
@@ -36,6 +38,7 @@ describe("stableReferences rule", () => {
         },
         file: "core/ratified/relationships.yaml",
       }],
+      entities: [{ data: { id: "ent-owner", kind: "owner", name: "Owner", status: "active", privacy_scope: "owner_private" }, file: "entities/registry.yaml" }],
     });
 
     const diags = stableReferences(store);
@@ -59,7 +62,24 @@ describe("stableReferences rule", () => {
           privacy_scope: "owner_private",
         },
         file: "core/ratified/relationships.yaml",
+      }, {
+        data: {
+          id: "fact-001",
+          kind: "fact",
+          statement: "Use concise replies.",
+          status: "ratified",
+          confidence: 0.9,
+          source_type: "human_reply",
+          source_ref: "q-1",
+          created_at: "2026-03-29T02:00:00Z",
+          last_confirmed_at: "2026-03-29T02:00:00Z",
+          confirmed_by: "owner",
+          evidence_count: 1,
+          privacy_scope: "owner_private",
+        },
+        file: "core/ratified/facts.yaml",
       }],
+      entities: [{ data: { id: "ent-owner", kind: "owner", name: "Owner", status: "active", privacy_scope: "owner_private" }, file: "entities/registry.yaml" }],
     });
 
     expect(stableReferences(store)).toHaveLength(0);

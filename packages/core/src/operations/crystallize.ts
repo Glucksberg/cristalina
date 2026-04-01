@@ -4,6 +4,7 @@ import type { IdGenerator } from "../id/generator.js";
 import type { CrystallizeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
 import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
+import { resolveAuthorityPolicy } from "../policy/resolver.js";
 
 export function planCrystallize(
   store: ParsedStore,
@@ -16,11 +17,13 @@ export function planCrystallize(
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
   const authority = resolveAuthorityContext(input.authority, input.authorized);
+  const authorityPolicy = resolveAuthorityPolicy(store);
   enforceAuthority({
     operation: "CRYSTALLIZE",
     kind,
     targetId: input.targetId,
     authority,
+    policy: authorityPolicy,
   });
 
   const confidence = typeof target.data.confidence === "number" ? target.data.confidence : 0;

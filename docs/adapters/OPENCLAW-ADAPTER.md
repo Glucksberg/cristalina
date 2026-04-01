@@ -58,6 +58,8 @@ The adapter SHOULD read from:
 - `core/identity/`
 - `core/preferences/`
 - `core/narrative/`
+- `entities/`
+- `policy/`
 - `compiled/hot/`
 - `compiled/warm/`
 - recent `events/` when policy allows
@@ -210,7 +212,8 @@ The adapter SHOULD detect drift by:
 Drift SHOULD produce:
 
 - a warning
-- a proposal
+- a runtime drift event
+- one or more governed proposals when the edited sections are machine-parsable
 - or a projection refresh
 
 Drift MUST NOT silently become canonical.
@@ -232,6 +235,13 @@ projection_id: proj-2026-03-29-01
 ```
 
 This helps prevent confusion between generated artifacts and manually governed truth.
+
+When the adapter supports governed re-ingest, that metadata SHOULD also include enough writeback contract information to distinguish:
+
+- generated artifact kind
+- machine-extractable sections
+- projection profile
+- checksum lineage
 
 ---
 

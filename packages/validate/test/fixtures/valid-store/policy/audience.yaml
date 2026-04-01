@@ -1,8 +1,8 @@
-version: 1
+id: pol-audience-default
+kind: audience_policy
 default_scope: owner_private
 policy_mode: audience_aware
 escalation_rule: no_automatic_privacy_escalation
-privacy_scope: owner_private
 audiences:
   owner_private:
     can_view: [owner_private, agent_operational, project_private, shareable, public_safe]
@@ -14,9 +14,6 @@ audiences:
     can_view: [shareable, public_safe]
   public_safe:
     can_view: [public_safe]
-sensitive_categories:
-  - credentials
-  - finances
-  - precise_location
-  - health
-  - private_strategy
+metadata:
+  version: 1
+  updated_at: "2026-03-29T02:00:00Z"

@@ -1,0 +1,13 @@
+items:
+  - id: ent-owner
+    kind: owner
+    name: Owner
+    status: active
+    privacy_scope: owner_private
+    created_at: "2026-03-29T02:00:00Z"
+  - id: ent-agent-cristalina
+    kind: agent
+    name: Cristalina
+    status: active
+    privacy_scope: owner_private
+    created_at: "2026-03-29T02:00:00Z"

@@ -8,6 +8,7 @@ import type {
   ProposalType as ProposalTypeType,
 } from "@cristalina/types";
 import type { OperationInput } from "../operations/types.js";
+import type { AudiencePolicyConfig, PromotionPolicy } from "../policy/runtime.js";
 import type {
   CanonicalOperationPlan,
   CurationResponse,
@@ -21,6 +22,7 @@ import {
   privacyAudienceExpansionForProposal,
   requiresHumanApproval,
 } from "./policy.js";
+import { DEFAULT_AUDIENCE_POLICY, DEFAULT_PROMOTION_POLICY } from "../policy/runtime.js";
 
 interface DecisionSeed {
   proposalId: string;
@@ -59,6 +61,14 @@ interface PlanningContext {
   tags?: string[];
   relatedEntities?: EntityId[];
   notes?: string;
+  followUpPayloads: Array<{
+    kind: MemoryObjectKindType;
+    statement: string;
+    privacy_scope: PrivacyScopeType;
+    tags?: string[];
+    related_entities?: EntityId[];
+    notes?: string;
+  }>;
 }
 
 interface RatificationOperationHandler {
@@ -166,6 +176,10 @@ function buildPlanningContext(
   proposal: ParsedObject,
   decision: NormalizedDecision,
   targetObject: ParsedObject | null = null,
+  policies: {
+    promotion?: PromotionPolicy;
+    audience?: AudiencePolicyConfig;
+  } = {},
 ): PlanningContext {
   const payload = decision.candidate_payload;
   const proposalId = decision.proposal_id;
@@ -188,7 +202,11 @@ function buildPlanningContext(
       : null,
     targetPrivacyScope,
     candidatePrivacyScope,
-    privacyExpansionAudiences: privacyAudienceExpansionForProposal(proposal, targetObject),
+    privacyExpansionAudiences: privacyAudienceExpansionForProposal(
+      proposal,
+      targetObject,
+      policies.audience ?? DEFAULT_AUDIENCE_POLICY,
+    ),
     payload,
     kind: isMemoryObjectKind(payload.kind) ? payload.kind : "fact",
     statement: typeof payload.statement === "string" ? payload.statement : null,
@@ -200,8 +218,18 @@ function buildPlanningContext(
       : `Ratified ${proposalId}`,
     policyTags: getProposalPolicyTags(proposal),
     supportingEvents: getSupportingEvents(proposal),
-    approvalReasons: approvalReasonsForProposal(proposal, undefined, targetObject),
-    requiresExplicitApproval: requiresHumanApproval(proposal, undefined, targetObject),
+    approvalReasons: approvalReasonsForProposal(
+      proposal,
+      policies.promotion ?? DEFAULT_PROMOTION_POLICY,
+      targetObject,
+      policies.audience ?? DEFAULT_AUDIENCE_POLICY,
+    ),
+    requiresExplicitApproval: requiresHumanApproval(
+      proposal,
+      policies.promotion ?? DEFAULT_PROMOTION_POLICY,
+      targetObject,
+      policies.audience ?? DEFAULT_AUDIENCE_POLICY,
+    ),
     tags: Array.isArray(payload.tags)
       ? payload.tags.filter((tag): tag is string => typeof tag === "string")
       : undefined,
@@ -209,6 +237,26 @@ function buildPlanningContext(
       ? payload.related_entities.filter((entity): entity is EntityId => typeof entity === "string")
       : undefined,
     notes: typeof payload.notes === "string" ? payload.notes : undefined,
+    followUpPayloads: Array.isArray(payload.follow_up_payloads)
+      ? payload.follow_up_payloads.flatMap((entry) => {
+          const record = getRecord(entry);
+          if (!record) return [];
+          if (!isMemoryObjectKind(record.kind)) return [];
+          if (typeof record.statement !== "string" || !isPrivacyScope(record.privacy_scope)) return [];
+          return [{
+            kind: record.kind,
+            statement: record.statement,
+            privacy_scope: record.privacy_scope,
+            tags: Array.isArray(record.tags)
+              ? record.tags.filter((tag): tag is string => typeof tag === "string")
+              : undefined,
+            related_entities: Array.isArray(record.related_entities)
+              ? record.related_entities.filter((entity): entity is EntityId => typeof entity === "string")
+              : undefined,
+            notes: typeof record.notes === "string" ? record.notes : undefined,
+          }];
+        })
+      : [],
   };
 }
 
@@ -266,10 +314,34 @@ function buildCreateOperation(context: PlanningContext): OperationInput {
   };
 }
 
+function buildCreateOperationFromPayload(
+  context: PlanningContext,
+  payload: PlanningContext["followUpPayloads"][number],
+): OperationInput {
+  return {
+    op: "CREATE",
+    kind: payload.kind,
+    statement: payload.statement,
+    source_type: "human_reply",
+    source_ref: context.sourceRef,
+    confirmedBy: "owner",
+    confidence: context.confidence,
+    privacy_scope: payload.privacy_scope,
+    tags: payload.tags,
+    related_entities: payload.related_entities,
+    notes: payload.notes,
+    authority: OWNER_RATIFICATION_AUTHORITY,
+    authorized: true,
+  };
+}
+
 const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHandler> = {
   create: {
     normalize: (context) => withEditedStatement(context, "create"),
-    buildOperations: (context) => [buildCreateOperation(context)],
+    buildOperations: (context) => [
+      buildCreateOperation(context),
+      ...context.followUpPayloads.map((payload) => buildCreateOperationFromPayload(context, payload)),
+    ],
   },
   confirm: {
     normalize: (context) => {
@@ -315,7 +387,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         confirmedBy: "owner",
         authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
-      }];
+      }, ...context.followUpPayloads.map((payload) => buildCreateOperationFromPayload(context, payload))];
     },
   },
   supersede: {
@@ -326,7 +398,10 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
       }
 
       if (!context.targetId) {
-        return [buildCreateOperation(context)];
+        return [
+          buildCreateOperation(context),
+          ...context.followUpPayloads.map((payload) => buildCreateOperationFromPayload(context, payload)),
+        ];
       }
 
       return [{
@@ -341,7 +416,7 @@ const OPERATION_HANDLERS: Record<ProposalOperationType, RatificationOperationHan
         privacy_scope: context.privacyScope,
         authority: OWNER_RATIFICATION_AUTHORITY,
         authorized: true,
-      }];
+      }, ...context.followUpPayloads.map((payload) => buildCreateOperationFromPayload(context, payload))];
     },
   },
   deprecate: {
@@ -385,8 +460,12 @@ function buildNonAppliedPlan(
   proposal: ParsedObject,
   decision: NormalizedDecision,
   targetObject: ParsedObject | null = null,
+  policies: {
+    promotion?: PromotionPolicy;
+    audience?: AudiencePolicyConfig;
+  } = {},
 ): CanonicalOperationPlan {
-  const context = buildPlanningContext(proposal, decision, targetObject);
+  const context = buildPlanningContext(proposal, decision, targetObject, policies);
 
   switch (decision.answer_type) {
     case "reject":
@@ -428,12 +507,16 @@ export function buildOperationPlan(
   proposal: ParsedObject,
   decision: NormalizedDecision,
   targetObject: ParsedObject | null = null,
+  policies: {
+    promotion?: PromotionPolicy;
+    audience?: AudiencePolicyConfig;
+  } = {},
 ): CanonicalOperationPlan {
   if (decision.answer_type === "reject" || decision.answer_type === "defer" || decision.answer_type === "uncertain") {
-    return buildNonAppliedPlan(proposal, decision, targetObject);
+    return buildNonAppliedPlan(proposal, decision, targetObject, policies);
   }
 
-  const context = buildPlanningContext(proposal, decision, targetObject);
+  const context = buildPlanningContext(proposal, decision, targetObject, policies);
   return {
     question_ref: decision.question_ref,
     proposal_id: decision.proposal_id,

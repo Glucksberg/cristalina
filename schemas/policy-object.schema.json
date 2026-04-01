@@ -1,0 +1,601 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/policy-object.schema.json",
+  "anyOf": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pol-"
+        },
+        "kind": {
+          "type": "string",
+          "const": "audience_policy"
+        },
+        "default_scope": {
+          "type": "string",
+          "enum": [
+            "owner_private",
+            "agent_operational",
+            "project_private",
+            "shareable",
+            "public_safe"
+          ]
+        },
+        "policy_mode": {
+          "type": "string",
+          "const": "audience_aware"
+        },
+        "escalation_rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audiences": {
+          "type": "object",
+          "properties": {
+            "owner_private": {
+              "type": "object",
+              "properties": {
+                "can_view": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "owner_private",
+                      "agent_operational",
+                      "project_private",
+                      "shareable",
+                      "public_safe"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "can_view"
+              ],
+              "additionalProperties": false
+            },
+            "agent_operational": {
+              "type": "object",
+              "properties": {
+                "can_view": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "owner_private",
+                      "agent_operational",
+                      "project_private",
+                      "shareable",
+                      "public_safe"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "can_view"
+              ],
+              "additionalProperties": false
+            },
+            "project_private": {
+              "type": "object",
+              "properties": {
+                "can_view": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "owner_private",
+                      "agent_operational",
+                      "project_private",
+                      "shareable",
+                      "public_safe"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "can_view"
+              ],
+              "additionalProperties": false
+            },
+            "shareable": {
+              "type": "object",
+              "properties": {
+                "can_view": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "owner_private",
+                      "agent_operational",
+                      "project_private",
+                      "shareable",
+                      "public_safe"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "can_view"
+              ],
+              "additionalProperties": false
+            },
+            "public_safe": {
+              "type": "object",
+              "properties": {
+                "can_view": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "owner_private",
+                      "agent_operational",
+                      "project_private",
+                      "shareable",
+                      "public_safe"
+                    ]
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "can_view"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "owner_private",
+            "agent_operational",
+            "project_private",
+            "shareable",
+            "public_safe"
+          ],
+          "additionalProperties": false
+        },
+        "sensitive_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "default_scope",
+        "policy_mode",
+        "escalation_rule",
+        "audiences"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pol-"
+        },
+        "kind": {
+          "type": "string",
+          "const": "promotion_policy"
+        },
+        "default_question_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_question_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "high_risk_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "preference",
+              "constraint",
+              "project",
+              "relationship",
+              "belief",
+              "identity_trait",
+              "style_rule",
+              "value",
+              "priority"
+            ]
+          }
+        },
+        "sensitive_policy_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "minimum_supporting_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "default_question_count",
+        "max_question_count",
+        "minimum_supporting_events"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pol-"
+        },
+        "kind": {
+          "type": "string",
+          "const": "authority_policy"
+        },
+        "high_risk_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "preference",
+              "constraint",
+              "project",
+              "relationship",
+              "belief",
+              "identity_trait",
+              "style_rule",
+              "value",
+              "priority"
+            ]
+          }
+        },
+        "restricted_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "preference",
+              "constraint",
+              "project",
+              "relationship",
+              "belief",
+              "identity_trait",
+              "style_rule",
+              "value",
+              "priority"
+            ]
+          }
+        },
+        "trusted_owner_channel_prefixes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^pol-"
+        },
+        "kind": {
+          "type": "string",
+          "const": "projection_policy"
+        },
+        "default_profiles": {
+          "type": "object",
+          "properties": {
+            "owner_private": {
+              "type": "string",
+              "enum": [
+                "tiny",
+                "standard",
+                "deep"
+              ]
+            },
+            "agent_operational": {
+              "type": "string",
+              "enum": [
+                "tiny",
+                "standard",
+                "deep"
+              ]
+            },
+            "project_private": {
+              "type": "string",
+              "enum": [
+                "tiny",
+                "standard",
+                "deep"
+              ]
+            },
+            "shareable": {
+              "type": "string",
+              "enum": [
+                "tiny",
+                "standard",
+                "deep"
+              ]
+            },
+            "public_safe": {
+              "type": "string",
+              "enum": [
+                "tiny",
+                "standard",
+                "deep"
+              ]
+            }
+          },
+          "required": [
+            "owner_private",
+            "agent_operational",
+            "project_private",
+            "shareable",
+            "public_safe"
+          ],
+          "additionalProperties": false
+        },
+        "channel_profile_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "match_prefix": {
+                "type": "string",
+                "minLength": 1
+              },
+              "profile": {
+                "type": "string",
+                "enum": [
+                  "tiny",
+                  "standard",
+                  "deep"
+                ]
+              }
+            },
+            "required": [
+              "match_prefix",
+              "profile"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "tier_limits": {
+          "type": "object",
+          "properties": {
+            "tiny": {
+              "type": "object",
+              "properties": {
+                "hot": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "warm": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "cold": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "hot",
+                "warm",
+                "cold"
+              ],
+              "additionalProperties": false
+            },
+            "standard": {
+              "type": "object",
+              "properties": {
+                "hot": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "warm": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "cold": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "hot",
+                "warm",
+                "cold"
+              ],
+              "additionalProperties": false
+            },
+            "deep": {
+              "type": "object",
+              "properties": {
+                "hot": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "warm": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "cold": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "hot",
+                "warm",
+                "cold"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "tiny",
+            "standard",
+            "deep"
+          ],
+          "additionalProperties": false
+        },
+        "kind_weights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fact",
+                  "preference",
+                  "constraint",
+                  "project",
+                  "relationship",
+                  "belief",
+                  "identity_trait",
+                  "style_rule",
+                  "value",
+                  "priority"
+                ]
+              },
+              "weight": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "kind",
+              "weight"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "always_hot_kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "preference",
+              "constraint",
+              "project",
+              "relationship",
+              "belief",
+              "identity_trait",
+              "style_rule",
+              "value",
+              "priority"
+            ]
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "updated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "notes": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "default_profiles",
+        "tier_limits"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "title": "Cristalina Policy Object"
+}

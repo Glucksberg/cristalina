@@ -576,4 +576,67 @@ describe("applyRatification", () => {
       "privacy_audience_expansion:project_private",
     ]));
   });
+
+  it("applies multi-intent ratification plans with follow-up payloads", async () => {
+    store.appendYamlItem("core/identity/style.yaml", {
+      id: "sty-001",
+      kind: "style_rule",
+      statement: "Be concise by default.",
+      status: "ratified",
+      confidence: 0.8,
+      source_type: "human_reply",
+      source_ref: "q-0",
+      created_at: "2026-03-29T01:00:00Z",
+      last_confirmed_at: "2026-03-29T01:00:00Z",
+      confirmed_by: "owner",
+      evidence_count: 1,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "identity_adjustment",
+      operation: "supersede",
+      target_ref: {
+        object_id: "sty-001",
+        kind: "style_rule",
+        facet: "style",
+      },
+      candidate_payload: {
+        kind: "style_rule",
+        statement: "Be concise for operational work.",
+        privacy_scope: "owner_private",
+        follow_up_payloads: [{
+          kind: "constraint",
+          statement: "Expand only when the owner explicitly asks for architecture depth.",
+          privacy_scope: "owner_private",
+        }],
+      },
+      reason: "Separate operational brevity from deeper architecture discussion.",
+      provenance: { supporting_events: ["evt-001"] },
+      confidence: 0.74,
+      privacy_scope: "owner_private",
+      policy_tags: ["identity"],
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "Yes." },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.applied.map((entry) => entry.operation)).toEqual(["LOG", "SUPERSEDE", "CREATE"]);
+
+    const snapshot = await store.read();
+    const newStyle = snapshot.coreObjects.find((obj) =>
+      obj.data.kind === "style_rule"
+      && obj.data.statement === "Be concise for operational work.");
+    const followUp = snapshot.coreObjects.find((obj) =>
+      obj.data.kind === "constraint"
+      && obj.data.statement === "Expand only when the owner explicitly asks for architecture depth.");
+
+    expect(newStyle).toBeTruthy();
+    expect(followUp).toBeTruthy();
+  });
 });

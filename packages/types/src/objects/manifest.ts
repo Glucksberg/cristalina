@@ -35,6 +35,11 @@ export const ManifestSchema = z
       event: z.string().min(1),
       proposal: z.string().min(1),
       memory_object: z.string().min(1),
+      entity: z.string().min(1),
+      policy_object: z.string().min(1),
+      derived_artifact: z.string().min(1),
+      projection_manifest: z.string().min(1),
+      adapter_writeback_contract: z.string().min(1),
     }),
 
     // Recommended fields

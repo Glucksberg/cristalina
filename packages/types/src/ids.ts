@@ -14,6 +14,7 @@ export const ID_PREFIXES = {
   contradiction: "ctr-",
   derivedArtifact: "drv-",
   entity: "ent-",
+  policy: "pol-",
   question: "q-",
   questionResponse: "qr-",
   curationPacket: "dcp-",
@@ -50,6 +51,9 @@ export type DerivedArtifactId = z.infer<typeof DerivedArtifactId>;
 
 export const EntityId = z.string().regex(/^ent-/, "Entity ID must start with 'ent-'");
 export type EntityId = z.infer<typeof EntityId>;
+
+export const PolicyId = z.string().regex(/^pol-/, "Policy ID must start with 'pol-'");
+export type PolicyId = z.infer<typeof PolicyId>;
 
 export const QuestionId = z.string().regex(/^q-(?!r)/, "Question ID must start with 'q-' (not 'qr-')");
 export type QuestionId = z.infer<typeof QuestionId>;

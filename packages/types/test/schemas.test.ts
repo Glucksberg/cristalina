@@ -10,6 +10,8 @@ import {
   ProjectionManifestSchema,
   DerivedArtifactSchema,
   StableReferenceSchema,
+  EntitySchema,
+  PolicyObjectSchema,
   PrivacyScope,
   MemoryStatus,
   ProposalStatus,
@@ -194,6 +196,35 @@ describe("ProposalSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts multi-intent follow-up payloads", () => {
+    const result = ProposalSchema.safeParse({
+      id: "prop-001",
+      type: "identity_adjustment",
+      operation: "supersede",
+      target_ref: {
+        object_id: "sty-001",
+        kind: "style_rule",
+        facet: "style",
+      },
+      candidate_payload: {
+        kind: "style_rule",
+        statement: "Be concise by default for operational work.",
+        privacy_scope: "owner_private",
+        follow_up_payloads: [{
+          kind: "constraint",
+          statement: "Expand only when the owner explicitly asks for depth.",
+          privacy_scope: "owner_private",
+        }],
+      },
+      reason: "test",
+      provenance: { supporting_events: ["evt-001"] },
+      confidence: 0.7,
+      status: "pending",
+      privacy_scope: "owner_private",
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("MemoryObjectSchema", () => {
@@ -218,6 +249,41 @@ describe("StableReferenceSchema", () => {
       kind: "owner",
       facet: "working_preferences",
       label: "owner preference context",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("EntitySchema", () => {
+  it("accepts governed entity registry entries", () => {
+    const result = EntitySchema.safeParse({
+      id: "ent-owner",
+      kind: "owner",
+      name: "Owner",
+      status: "active",
+      privacy_scope: "owner_private",
+      aliases: ["markus"],
+      created_at: "2026-03-29T02:00:00Z",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("PolicyObjectSchema", () => {
+  it("accepts audience policy objects", () => {
+    const result = PolicyObjectSchema.safeParse({
+      id: "pol-audience-default",
+      kind: "audience_policy",
+      default_scope: "owner_private",
+      policy_mode: "audience_aware",
+      escalation_rule: "no_automatic_privacy_escalation",
+      audiences: {
+        owner_private: { can_view: ["owner_private", "agent_operational", "project_private", "shareable", "public_safe"] },
+        agent_operational: { can_view: ["agent_operational", "shareable", "public_safe"] },
+        project_private: { can_view: ["project_private", "shareable", "public_safe"] },
+        shareable: { can_view: ["shareable", "public_safe"] },
+        public_safe: { can_view: ["public_safe"] },
+      },
     });
     expect(result.success).toBe(true);
   });

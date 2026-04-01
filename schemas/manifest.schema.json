@@ -70,13 +70,38 @@
         "memory_object": {
           "type": "string",
           "minLength": 1
+        },
+        "entity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_object": {
+          "type": "string",
+          "minLength": 1
+        },
+        "derived_artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "projection_manifest": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adapter_writeback_contract": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
         "manifest",
         "event",
         "proposal",
-        "memory_object"
+        "memory_object",
+        "entity",
+        "policy_object",
+        "derived_artifact",
+        "projection_manifest",
+        "adapter_writeback_contract"
       ],
       "additionalProperties": false
     },

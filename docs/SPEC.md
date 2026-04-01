@@ -134,7 +134,8 @@ The agent MUST NOT freely write to:
 - `core/values/`
 - `core/identity/`
 - `core/preferences/`
-- `core/privacy/`
+- `entities/`
+- `policy/`
 
 ### 6.3 Canonical updates
 Canonical changes MUST happen through one of the following:
@@ -179,8 +180,15 @@ Recommended layout:
       values.yaml
     narrative/
       story.md
-    privacy/
-      policy.yaml
+
+  entities/
+    registry.yaml
+
+  policy/
+    audience.yaml
+    promotion.yaml
+    authority.yaml
+    projection.yaml
 
   compiled/
     hot/
@@ -221,7 +229,7 @@ Recommended layout:
 Canonical flow:
 
 ```text
-events -> proposals -> ratified core -> digests -> compiled context -> bootstrap
+events -> proposals -> ratified core + policy + entities -> compiled context -> bootstrap
 ```
 
 This flow is **not circular by default**.
@@ -361,6 +369,8 @@ The canonical result of `accept` or `edit` depends on the proposal's declared op
 - `SUPERSEDE`
 - `DEPRECATE`
 - `CONTRADICT`
+
+An `edit` response MAY also yield multiple canonical operations when one human answer resolves into more than one durable memory update.
 
 ### 12.5 High-risk classes
 Updates affecting the following MUST require human approval:
@@ -505,7 +515,7 @@ Rare but recoverable:
 - archived reference material
 
 ### 18.3 Rule
-Compiled context SHOULD be reproducible from core + events + policy.
+Compiled context SHOULD be reproducible from core + entities + policy + events, subject to audience and channel rules.
 
 ---
 
@@ -560,6 +570,8 @@ Implementations SHOULD validate:
 - disputed memories without arbitration
 - bootstrap inconsistency
 - compiled-context drift
+- missing entity references
+- malformed policy objects
 
 ---
 

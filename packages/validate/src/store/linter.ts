@@ -47,6 +47,8 @@ export async function lintStore(storePath: string, options?: LintOptions): Promi
       + store.proposals.length
       + store.curationPackets.length
       + store.coreObjects.length
+      + store.entities.length
+      + store.policyObjects.length
       + store.contradictions.length,
     errorCount: diagnostics.filter((d) => d.severity === "error").length,
     warningCount: diagnostics.filter((d) => d.severity === "warning").length,

@@ -1,5 +1,12 @@
 import type { ParsedObject } from "@cristalina/validate";
-import { canAudienceAccessScope, type PrivacyScope } from "@cristalina/types";
+import type { MemoryObjectKind, PrivacyScope } from "@cristalina/types";
+import {
+  DEFAULT_AUDIENCE_POLICY,
+  DEFAULT_PROJECTION_POLICY,
+  canAudienceAccessScopeWithPolicy,
+  type AudiencePolicyConfig,
+  type ProjectionPolicy,
+} from "../policy/runtime.js";
 
 export interface ScoredObject {
   object: ParsedObject;
@@ -8,7 +15,11 @@ export interface ScoredObject {
 }
 
 /** Score a memory object for compiled context relevance */
-export function scoreObject(obj: ParsedObject, now: string): number {
+export function scoreObject(
+  obj: ParsedObject,
+  now: string,
+  policy: ProjectionPolicy = DEFAULT_PROJECTION_POLICY,
+): number {
   let score = 0;
   const data = obj.data;
 
@@ -25,9 +36,9 @@ export function scoreObject(obj: ParsedObject, now: string): number {
 
   // Kind weight (identity/values rank higher for HOT)
   const kind = data.kind;
-  if (kind === "identity_trait" || kind === "value" || kind === "priority") score += 15;
-  else if (kind === "style_rule" || kind === "preference") score += 10;
-  else if (kind === "constraint") score += 8;
+  if (typeof kind === "string") {
+    score += policy.kindWeights.get(kind as MemoryObjectKind) ?? 0;
+  }
 
   // Evidence count
   const evidence = typeof data.evidence_count === "number" ? data.evidence_count : 0;
@@ -46,11 +57,15 @@ export function scoreObject(obj: ParsedObject, now: string): number {
 }
 
 /** Assign tier based on score and kind */
-export function assignTier(obj: ParsedObject, score: number): "hot" | "warm" | "cold" {
+export function assignTier(
+  obj: ParsedObject,
+  score: number,
+  policy: ProjectionPolicy = DEFAULT_PROJECTION_POLICY,
+): "hot" | "warm" | "cold" {
   const kind = obj.data.kind;
 
   // Identity and values are always HOT
-  if (kind === "identity_trait" || kind === "value" || kind === "priority" || kind === "style_rule") {
+  if (typeof kind === "string" && policy.alwaysHotKinds.has(kind as MemoryObjectKind)) {
     return score > 20 ? "hot" : "warm";
   }
 
@@ -64,10 +79,14 @@ export function assignTier(obj: ParsedObject, score: number): "hot" | "warm" | "
  * Filter objects by audience privacy scope.
  * Visibility is governed by an explicit audience matrix, not a linear scope ladder.
  */
-export function filterByAudience(objects: ParsedObject[], audience: PrivacyScope): ParsedObject[] {
+export function filterByAudience(
+  objects: ParsedObject[],
+  audience: PrivacyScope,
+  policy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
+): ParsedObject[] {
   return objects.filter((obj) => {
     const scope = obj.data.privacy_scope;
     if (typeof scope !== "string") return false;
-    return canAudienceAccessScope(audience, scope as PrivacyScope);
+    return canAudienceAccessScopeWithPolicy(policy, audience, scope as PrivacyScope);
   });
 }

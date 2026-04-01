@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cristalina.dev/schemas/entity.schema.json",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^ent-"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "agent",
+        "project",
+        "runtime",
+        "channel",
+        "person",
+        "organization"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "deprecated",
+        "archived"
+      ]
+    },
+    "privacy_scope": {
+      "type": "string",
+      "enum": [
+        "owner_private",
+        "agent_operational",
+        "project_private",
+        "shareable",
+        "public_safe"
+      ]
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "status",
+    "privacy_scope"
+  ],
+  "additionalProperties": false,
+  "title": "Cristalina Entity"
+}

@@ -45,6 +45,12 @@ export class CristalinaStore {
         for (const obj of this._snapshot.contradictions) {
           if (typeof obj.data.id === "string") allIds.push(obj.data.id);
         }
+        for (const obj of this._snapshot.entities) {
+          if (typeof obj.data.id === "string") allIds.push(obj.data.id);
+        }
+        for (const obj of this._snapshot.policyObjects) {
+          if (typeof obj.data.id === "string") allIds.push(obj.data.id);
+        }
         this.idGen.seedFromIds(allIds);
       }
     }
@@ -70,7 +76,15 @@ export class CristalinaStore {
   /** Find an object by ID across all collections */
   async findById(id: string): Promise<ParsedObject | null> {
     const store = await this.read();
-    for (const collections of [store.events, store.coreObjects, store.proposals, store.curationPackets, store.contradictions]) {
+    for (const collections of [
+      store.events,
+      store.coreObjects,
+      store.proposals,
+      store.curationPackets,
+      store.contradictions,
+      store.entities,
+      store.policyObjects,
+    ]) {
       for (const obj of collections) {
         if (obj.data.id === id) return obj;
         if (obj.data.packet_id === id) return obj;

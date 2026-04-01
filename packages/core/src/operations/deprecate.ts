@@ -4,6 +4,7 @@ import type { IdGenerator } from "../id/generator.js";
 import type { DeprecateInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
 import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
+import { resolveAuthorityPolicy } from "../policy/resolver.js";
 
 export function planDeprecate(
   store: ParsedStore,
@@ -21,11 +22,13 @@ export function planDeprecate(
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
   const authority = resolveAuthorityContext(input.authority, input.authorized);
+  const authorityPolicy = resolveAuthorityPolicy(store);
   enforceAuthority({
     operation: "DEPRECATE",
     kind,
     targetId: input.targetId,
     authority,
+    policy: authorityPolicy,
   });
 
   const ts = clock.isoNow();

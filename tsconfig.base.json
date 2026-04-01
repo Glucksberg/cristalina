@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -11,6 +12,11 @@
     "declarationMap": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "paths": {
+      "@cristalina/types": ["packages/types/src/index.ts"],
+      "@cristalina/validate": ["packages/validate/src/index.ts"],
+      "@cristalina/core": ["packages/core/src/index.ts"]
+    }
   }
 }

@@ -11,6 +11,8 @@ function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
     proposals: [],
     curationPackets: [],
     coreObjects: [],
+    entities: [],
+    policyObjects: [],
     contradictions: [],
     files: [],
     parseErrors: [],

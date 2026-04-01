@@ -17,6 +17,7 @@ export function privacyScope(store: ParsedStore): Diagnostic[] {
     ...store.events,
     ...store.proposals,
     ...store.coreObjects,
+    ...store.entities,
     ...store.contradictions,
   ];
 

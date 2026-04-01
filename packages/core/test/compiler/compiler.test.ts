@@ -194,6 +194,35 @@ describe("compile", () => {
     expect(artifacts.every((artifact) => String(artifact.path).startsWith("compiled/channels/group_channel/"))).toBe(true);
   });
 
+  it("respects projection policy objects from the store", async () => {
+    seedObjects();
+    store.writeYaml("policy/projection.yaml", {
+      id: "pol-projection-default",
+      kind: "projection_policy",
+      default_profiles: {
+        owner_private: "tiny",
+        agent_operational: "standard",
+        project_private: "standard",
+        shareable: "standard",
+        public_safe: "tiny",
+      },
+      channel_profile_rules: [
+        { match_prefix: "owner_", profile: "tiny" },
+      ],
+      tier_limits: {
+        tiny: { hot: 1, warm: 1, cold: 1 },
+        standard: { hot: 14, warm: 18, cold: 24 },
+        deep: { hot: 24, warm: 40, cold: 60 },
+      },
+      always_hot_kinds: ["identity_trait", "value", "priority", "style_rule"],
+    });
+
+    const result = await compile(store, { audience: "owner_private" });
+
+    expect(result.metadata.projection_profile).toBe("tiny");
+    expect(result.metadata.hot_count).toBe(1);
+  });
+
   it("respects privacy scope filtering", async () => {
     store.appendYamlItem("core/ratified/facts.yaml", {
       id: "fact-public", kind: "fact", statement: "Public fact.",

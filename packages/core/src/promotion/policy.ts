@@ -1,41 +1,16 @@
 import type { ParsedObject } from "@cristalina/validate";
-import { PrivacyScope, newlyVisibleAudiences, type PrivacyScope as PrivacyScopeType } from "@cristalina/types";
+import { PrivacyScope, type PrivacyScope as PrivacyScopeType } from "@cristalina/types";
 import { isProposalType, proposalTypeRequiresHumanApproval } from "./proposal-type-policy.js";
+import {
+  DEFAULT_AUDIENCE_POLICY,
+  DEFAULT_PROMOTION_POLICY,
+  newlyVisibleAudiencesWithPolicy,
+  type AudiencePolicyConfig,
+  type PromotionPolicy,
+} from "../policy/runtime.js";
 
-/** Which domains require human approval before canonical update */
-export interface PromotionPolicy {
-  /** Memory object kinds that MUST require human approval */
-  highRiskKinds: Set<string>;
-  /** Default number of questions per curation packet */
-  defaultQuestionCount: number;
-  /** Maximum questions per packet */
-  maxQuestionCount: number;
-  /** Policy tags that always imply a sensitive domain */
-  sensitivePolicyTags: Set<string>;
-  /** Minimum evidentiary support expected for mutation proposals */
-  minimumSupportingEvents: number;
-}
-
-export const DEFAULT_POLICY: PromotionPolicy = {
-  highRiskKinds: new Set([
-    "value",
-    "priority",
-    "identity_trait",
-    "style_rule",
-  ]),
-  defaultQuestionCount: 3,
-  maxQuestionCount: 5,
-  sensitivePolicyTags: new Set([
-    "privacy",
-    "sharing",
-    "identity",
-    "public_behavior",
-    "security",
-    "sensitive_preference",
-    "external_sharing",
-  ]),
-  minimumSupportingEvents: 1,
-};
+export { type PromotionPolicy } from "../policy/runtime.js";
+export const DEFAULT_POLICY: PromotionPolicy = DEFAULT_PROMOTION_POLICY;
 
 function getRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null ? value as Record<string, unknown> : null;
@@ -80,17 +55,18 @@ function targetPrivacyScope(targetObject: ParsedObject | null | undefined): Priv
 export function privacyAudienceExpansionForProposal(
   proposal: ParsedObject,
   targetObject?: ParsedObject | null,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
 ): PrivacyScopeType[] {
   const candidateScope = candidatePrivacyScope(proposal);
   if (!candidateScope) return [];
 
   const targetScope = targetPrivacyScope(targetObject);
   if (targetScope) {
-    return newlyVisibleAudiences(targetScope, candidateScope);
+    return newlyVisibleAudiencesWithPolicy(audiencePolicy, targetScope, candidateScope);
   }
 
   if (candidateScope === "shareable" || candidateScope === "public_safe") {
-    return newlyVisibleAudiences("owner_private", candidateScope);
+    return newlyVisibleAudiencesWithPolicy(audiencePolicy, "owner_private", candidateScope);
   }
 
   return [];
@@ -100,6 +76,7 @@ export function approvalReasonsForProposal(
   proposal: ParsedObject,
   policy: PromotionPolicy = DEFAULT_POLICY,
   targetObject?: ParsedObject | null,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
 ): string[] {
   const reasons: string[] = [];
   const data = proposal.data;
@@ -133,7 +110,7 @@ export function approvalReasonsForProposal(
   }
 
   const targetId = getTargetObjectId(proposal);
-  for (const audience of privacyAudienceExpansionForProposal(proposal, targetObject)) {
+  for (const audience of privacyAudienceExpansionForProposal(proposal, targetObject, audiencePolicy)) {
     reasons.push(targetId
       ? `privacy_audience_expansion:${audience}`
       : `outward_visibility:${audience}`);
@@ -147,8 +124,9 @@ export function requiresHumanApproval(
   proposal: ParsedObject,
   policy: PromotionPolicy = DEFAULT_POLICY,
   targetObject?: ParsedObject | null,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
 ): boolean {
-  return approvalReasonsForProposal(proposal, policy, targetObject).length > 0;
+  return approvalReasonsForProposal(proposal, policy, targetObject, audiencePolicy).length > 0;
 }
 
 export function supportingEventCount(proposal: ParsedObject): number {

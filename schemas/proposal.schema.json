@@ -169,6 +169,67 @@
         "notes": {
           "type": "string",
           "minLength": 1
+        },
+        "follow_up_payloads": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "fact",
+                  "preference",
+                  "constraint",
+                  "project",
+                  "relationship",
+                  "belief",
+                  "identity_trait",
+                  "style_rule",
+                  "value",
+                  "priority"
+                ]
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "privacy_scope": {
+                "type": "string",
+                "enum": [
+                  "owner_private",
+                  "agent_operational",
+                  "project_private",
+                  "shareable",
+                  "public_safe"
+                ]
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "related_entities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^ent-"
+                }
+              },
+              "notes": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "statement",
+              "privacy_scope"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [

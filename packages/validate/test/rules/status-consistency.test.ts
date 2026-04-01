@@ -11,6 +11,8 @@ function makeStore(coreObjects: ParsedStore["coreObjects"]): ParsedStore {
     proposals: [],
     curationPackets: [],
     coreObjects,
+    entities: [],
+    policyObjects: [],
     contradictions: [],
     files: [],
     parseErrors: [],

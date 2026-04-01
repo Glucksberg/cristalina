@@ -5,6 +5,8 @@ import type { IdGenerator } from "../id/generator.js";
 import { curationPacketPath } from "../store/paths.js";
 import { approvalReasonsForProposal, requiresHumanApproval, type PromotionPolicy, DEFAULT_POLICY } from "./policy.js";
 import { questionClassForProposalType, requireProposalType } from "./proposal-type-policy.js";
+import { DEFAULT_AUDIENCE_POLICY, type AudiencePolicyConfig } from "../policy/runtime.js";
+import { resolvePolicyBundle } from "../policy/resolver.js";
 
 export interface CurationQuestion {
   id: string;
@@ -49,12 +51,13 @@ function proposalPriority(
   proposal: ParsedObject,
   policy: PromotionPolicy,
   targetObject: ParsedObject | null = null,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
 ): "low" | "medium" | "high" | "critical" {
   const risk = getRisk(proposal);
   if (risk.level === "critical" || risk.level === "high" || risk.level === "medium" || risk.level === "low") {
     return risk.level;
   }
-  if (requiresHumanApproval(proposal, policy, targetObject)) return "high";
+  if (requiresHumanApproval(proposal, policy, targetObject, audiencePolicy)) return "high";
   return "medium";
 }
 
@@ -73,13 +76,18 @@ function findTargetObject(store: ParsedStore, proposal: ParsedObject): ParsedObj
 }
 
 /** Score a proposal for curation priority. */
-function scoreProposal(store: ParsedStore, proposal: ParsedObject, policy: PromotionPolicy): number {
+function scoreProposal(
+  store: ParsedStore,
+  proposal: ParsedObject,
+  policy: PromotionPolicy,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
+): number {
   let score = 0;
   const risk = getRisk(proposal);
   const targetObject = findTargetObject(store, proposal);
-  const approvalReasons = approvalReasonsForProposal(proposal, policy, targetObject);
+  const approvalReasons = approvalReasonsForProposal(proposal, policy, targetObject, audiencePolicy);
 
-  if (requiresHumanApproval(proposal, policy, targetObject)) score += 30;
+  if (requiresHumanApproval(proposal, policy, targetObject, audiencePolicy)) score += 30;
   if (approvalReasons.includes("thin_provenance")) score += 10;
   score += approvalReasons.filter((reason) => reason.startsWith("sensitive_policy_tag:")).length * 5;
   score += approvalReasons.filter((reason) => reason.startsWith("privacy_audience_expansion:")).length * 8;
@@ -111,6 +119,7 @@ function proposalToQuestion(
   questionId: string,
   policy: PromotionPolicy,
   targetObject: ParsedObject | null = null,
+  audiencePolicy: AudiencePolicyConfig = DEFAULT_AUDIENCE_POLICY,
 ): CurationQuestion {
   const payload = getProposalPayload(proposal);
   const propId = typeof proposal.data.id === "string" ? proposal.data.id : "unknown";
@@ -159,7 +168,7 @@ function proposalToQuestion(
     type: questionClassForProposal(proposal),
     question,
     proposal_refs: [propId],
-    priority: proposalPriority(proposal, policy, targetObject),
+    priority: proposalPriority(proposal, policy, targetObject, audiencePolicy),
   };
 }
 
@@ -171,19 +180,22 @@ export function generateCurationPacket(
   owner: string = "owner",
   policy: PromotionPolicy = DEFAULT_POLICY,
 ): GeneratedPacket | null {
+  const resolvedPolicies = resolvePolicyBundle(store);
+  const activePolicy = policy === DEFAULT_POLICY ? resolvedPolicies.promotion : policy;
+  const audiencePolicy = resolvedPolicies.audience;
   const pending = store.proposals.filter((p) => p.data.status === "pending");
   if (pending.length === 0) return null;
 
   const scored = pending
-    .map((proposal) => ({ proposal, score: scoreProposal(store, proposal, policy) }))
+    .map((proposal) => ({ proposal, score: scoreProposal(store, proposal, activePolicy, audiencePolicy) }))
     .sort((a, b) => b.score - a.score);
 
-  const count = Math.min(scored.length, policy.defaultQuestionCount);
+  const count = Math.min(scored.length, activePolicy.defaultQuestionCount);
   const selected = scored.slice(0, count);
 
   const questions: CurationQuestion[] = selected.map(({ proposal }) => {
     const qId = idGen.next("question");
-    return proposalToQuestion(proposal, qId, policy, findTargetObject(store, proposal));
+    return proposalToQuestion(proposal, qId, activePolicy, findTargetObject(store, proposal), audiencePolicy);
   });
 
   const packetId = idGen.next("curationPacket");

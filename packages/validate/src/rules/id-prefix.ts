@@ -37,6 +37,14 @@ export function idPrefix(store: ParsedStore): Diagnostic[] {
     checkPrefix(obj, ID_PREFIXES.contradiction, "contradiction", diagnostics);
   }
 
+  for (const obj of store.entities) {
+    checkPrefix(obj, ID_PREFIXES.entity, "entity", diagnostics);
+  }
+
+  for (const obj of store.policyObjects) {
+    checkPrefix(obj, ID_PREFIXES.policy, "policy-object", diagnostics);
+  }
+
   return diagnostics;
 }
 

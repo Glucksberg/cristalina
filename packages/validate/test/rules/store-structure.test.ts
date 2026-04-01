@@ -5,7 +5,7 @@ import type { ParsedStore } from "../../src/store/reader.js";
 function makeStore(files: string[]): ParsedStore {
   return {
     root: "/test", manifest: null, manifestFile: null,
-    events: [], proposals: [], curationPackets: [], coreObjects: [], contradictions: [],
+    events: [], proposals: [], curationPackets: [], coreObjects: [], entities: [], policyObjects: [], contradictions: [],
     files, parseErrors: [],
   };
 }
@@ -24,7 +24,8 @@ describe("storeStructure rule", () => {
       "core/ratified/facts.yaml",
       "core/identity/soul.yaml",
       "core/values/values.yaml",
-      "core/privacy/policy.yaml",
+      "entities/registry.yaml",
+      "policy/audience.yaml",
       "compiled/hot/session-pack.md",
     ]);
     const diags = storeStructure(store);
@@ -39,7 +40,8 @@ describe("storeStructure rule", () => {
       "core/ratified/facts.yaml",
       "core/identity/soul.yaml",
       "core/values/values.yaml",
-      "core/privacy/policy.yaml",
+      "entities/registry.yaml",
+      "policy/audience.yaml",
       "compiled/hot/session-pack.md",
     ]);
     const diags = storeStructure(store);

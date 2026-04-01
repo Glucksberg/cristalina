@@ -29,6 +29,10 @@ export interface ParsedStore {
   curationPackets: ParsedObject[];
   /** All parsed core memory objects (from core/ratified/, core/values/, etc.) */
   coreObjects: ParsedObject[];
+  /** All parsed entities */
+  entities: ParsedObject[];
+  /** All parsed policy objects */
+  policyObjects: ParsedObject[];
   /** All parsed contradictions */
   contradictions: ParsedObject[];
   /** Files discovered in the store */
@@ -45,6 +49,8 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
   const proposals: ParsedObject[] = [];
   const curationPackets: ParsedObject[] = [];
   const coreObjects: ParsedObject[] = [];
+  const entities: ParsedObject[] = [];
+  const policyObjects: ParsedObject[] = [];
   const contradictions: ParsedObject[] = [];
 
   if (!existsSync(root)) {
@@ -57,6 +63,8 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
       proposals,
       curationPackets,
       coreObjects,
+      entities,
+      policyObjects,
       contradictions,
       files: [],
       parseErrors,
@@ -157,6 +165,34 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     }
   }
 
+  // Read entity objects from entities/
+  for (const file of files.filter((f) => f.startsWith("entities/") && f.endsWith(".yaml"))) {
+    const data = readYamlFile(resolve(root, file), file, parseErrors);
+    if (data === null) continue;
+
+    if (data.items && Array.isArray(data.items)) {
+      for (let i = 0; i < data.items.length; i++) {
+        entities.push({ data: data.items[i] as Record<string, unknown>, file, index: i });
+      }
+    } else {
+      entities.push({ data, file });
+    }
+  }
+
+  // Read policy objects from policy/
+  for (const file of files.filter((f) => f.startsWith("policy/") && f.endsWith(".yaml"))) {
+    const data = readYamlFile(resolve(root, file), file, parseErrors);
+    if (data === null) continue;
+
+    if (data.items && Array.isArray(data.items)) {
+      for (let i = 0; i < data.items.length; i++) {
+        policyObjects.push({ data: data.items[i] as Record<string, unknown>, file, index: i });
+      }
+    } else {
+      policyObjects.push({ data, file });
+    }
+  }
+
   return {
     root,
     manifest,
@@ -165,6 +201,8 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     proposals,
     curationPackets,
     coreObjects,
+    entities,
+    policyObjects,
     contradictions,
     files,
     parseErrors,

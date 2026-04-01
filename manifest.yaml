@@ -31,6 +31,11 @@ schemas:
   event: schemas/event.schema.json
   proposal: schemas/proposal.schema.json
   memory_object: schemas/memory-object.schema.json
+  entity: schemas/entity.schema.json
+  policy_object: schemas/policy-object.schema.json
+  derived_artifact: schemas/derived-artifact.schema.json
+  projection_manifest: schemas/projection-manifest.schema.json
+  adapter_writeback_contract: schemas/adapter-writeback-contract.schema.json
 examples:
   sample_store: examples/sample-store/.cristalina/
 

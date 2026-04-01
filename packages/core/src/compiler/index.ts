@@ -15,6 +15,8 @@ import {
   wrapProjectionContent,
 } from "../adapter/writeback.js";
 import { resolveChannelProjectionContext } from "./channel.js";
+import { resolvePolicyBundle } from "../policy/resolver.js";
+import { type ProjectionPolicy } from "../policy/runtime.js";
 
 export interface CompilationOptions {
   audience: PrivacyScope;
@@ -48,26 +50,32 @@ export async function compile(
   options: CompilationOptions,
 ): Promise<CompiledContext> {
   const snapshot = await store.read();
+  const policies = resolvePolicyBundle(snapshot);
   const now = store.clock.isoNow();
   const projectionId = store.idGen.next("derivedArtifact");
-  const channelContext = resolveChannelProjectionContext(options.audience, options.channel, options.profile);
+  const channelContext = resolveChannelProjectionContext(
+    options.audience,
+    options.channel,
+    options.profile,
+    policies.projection,
+  );
   const channel = channelContext.normalizedChannel;
   const compiledPaths = namespacedCompiledPaths(channel);
 
-  const filtered = filterByAudience(snapshot.coreObjects, options.audience);
-  const visibleContradictions = filterByAudience(snapshot.contradictions, options.audience);
+  const filtered = filterByAudience(snapshot.coreObjects, options.audience, policies.audience);
+  const visibleContradictions = filterByAudience(snapshot.contradictions, options.audience, policies.audience);
 
   const scored: ScoredObject[] = filtered.map((obj) => {
-    const score = scoreObject(obj, now);
-    const tier = assignTier(obj, score);
+    const score = scoreObject(obj, now, policies.projection);
+    const tier = assignTier(obj, score, policies.projection);
     return { object: obj, score, tier };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  const hotObjects = limitTier(scored.filter((o) => o.tier === "hot"), channelContext.profile, "hot");
-  const warmObjects = limitTier(scored.filter((o) => o.tier === "warm"), channelContext.profile, "warm");
-  const coldObjects = limitTier(scored.filter((o) => o.tier === "cold"), channelContext.profile, "cold");
+  const hotObjects = limitTier(scored.filter((o) => o.tier === "hot"), channelContext.profile, "hot", policies.projection);
+  const warmObjects = limitTier(scored.filter((o) => o.tier === "warm"), channelContext.profile, "warm", policies.projection);
+  const coldObjects = limitTier(scored.filter((o) => o.tier === "cold"), channelContext.profile, "cold", policies.projection);
 
   const hot = renderHot(hotObjects, visibleContradictions);
   const warm = renderWarm(warmObjects);
@@ -183,19 +191,21 @@ function buildArtifacts(args: {
   );
 }
 
-function tierLimit(profile: ProjectionProfile, tier: "hot" | "warm" | "cold"): number {
-  switch (profile) {
-    case "tiny":
-      return tier === "hot" ? 8 : tier === "warm" ? 6 : 8;
-    case "deep":
-      return tier === "hot" ? 24 : tier === "warm" ? 40 : 60;
-    default:
-      return tier === "hot" ? 14 : tier === "warm" ? 18 : 24;
-  }
+function tierLimit(
+  profile: ProjectionProfile,
+  tier: "hot" | "warm" | "cold",
+  policy: ProjectionPolicy,
+): number {
+  return policy.tierLimits[profile][tier];
 }
 
-function limitTier(objects: ScoredObject[], profile: ProjectionProfile, tier: "hot" | "warm" | "cold"): ScoredObject[] {
-  return objects.slice(0, tierLimit(profile, tier));
+function limitTier(
+  objects: ScoredObject[],
+  profile: ProjectionProfile,
+  tier: "hot" | "warm" | "cold",
+  policy: ProjectionPolicy,
+): ScoredObject[] {
+  return objects.slice(0, tierLimit(profile, tier, policy));
 }
 
 function writeCompatibilityAlias(

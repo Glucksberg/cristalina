@@ -23,6 +23,14 @@ export const ProposalCandidatePayloadSchema = z
     related_entities: z.array(EntityId).optional(),
     related_object_id: CanonicalObjectId.optional(),
     notes: z.string().min(1).optional(),
+    follow_up_payloads: z.array(z.object({
+      kind: MemoryObjectKind,
+      statement: z.string().min(1),
+      privacy_scope: PrivacyScope,
+      tags: z.array(z.string().min(1)).optional(),
+      related_entities: z.array(EntityId).optional(),
+      notes: z.string().min(1).optional(),
+    }).strict()).optional(),
   })
   .strict();
 

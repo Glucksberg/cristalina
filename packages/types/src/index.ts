@@ -14,6 +14,8 @@ export {
   QuestionClass,
   RelationType,
   EntityKind,
+  EntityStatus,
+  PolicyKind,
   DerivedArtifactType,
   WritebackMode,
   ProjectionProfile,
@@ -32,6 +34,7 @@ export {
   ContradictionId,
   DerivedArtifactId,
   EntityId,
+  PolicyId,
   QuestionId,
   QuestionResponseId,
   CurationPacketId,
@@ -88,6 +91,19 @@ export { ValueSchema, type Value } from "./objects/value.js";
 export { IdentityTraitSchema, type IdentityTrait } from "./objects/identity-trait.js";
 export { StyleRuleSchema, type StyleRule } from "./objects/style-rule.js";
 export { ContradictionSchema, type Contradiction } from "./objects/contradiction.js";
+export { EntitySchema, type Entity } from "./objects/entity.js";
+export {
+  AudiencePolicySchema,
+  PromotionPolicySchema,
+  AuthorityPolicySchema,
+  ProjectionPolicySchema,
+  PolicyObjectSchema,
+  type AudiencePolicy,
+  type PromotionPolicyObject,
+  type AuthorityPolicyObject,
+  type ProjectionPolicyObject,
+  type PolicyObject,
+} from "./objects/policy-object.js";
 export { QuestionSchema, type Question } from "./objects/question.js";
 export { ResponseSchema, type Response } from "./objects/response.js";
 export { DerivedArtifactSchema, type DerivedArtifact } from "./objects/derived-artifact.js";

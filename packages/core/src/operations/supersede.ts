@@ -4,6 +4,7 @@ import type { IdGenerator, PrefixKey } from "../id/generator.js";
 import type { SupersedeInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
 import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
+import { resolveAuthorityPolicy } from "../policy/resolver.js";
 
 const KIND_TO_PREFIX: Record<string, PrefixKey> = {
   fact: "fact", preference: "fact", constraint: "fact", project: "fact", belief: "fact",
@@ -24,11 +25,13 @@ export function planSupersede(
 
   const oldKind = typeof old.data.kind === "string" ? old.data.kind : "fact";
   const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  const authorityPolicy = resolveAuthorityPolicy(store);
   enforceAuthority({
     operation: "SUPERSEDE",
     kind: oldKind,
     targetId: input.oldId,
     authority,
+    policy: authorityPolicy,
   });
 
   const ts = clock.isoNow();

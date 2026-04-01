@@ -1,5 +1,5 @@
 import type { MemoryOperation } from "@cristalina/types";
-import { coreFilePath } from "../store/paths.js";
+import { DEFAULT_AUTHORITY_POLICY, type AuthorityPolicy } from "../policy/runtime.js";
 
 export type AuthorityActorRole = "owner" | "agent" | "system";
 
@@ -16,6 +16,7 @@ export interface OperationAuthorityRequest {
   kind: string;
   targetId: string;
   authority?: OperationAuthorityContext;
+  policy?: AuthorityPolicy;
 }
 
 export interface AuthorityDecision {
@@ -25,21 +26,6 @@ export interface AuthorityDecision {
   domainPath: string;
   authority: OperationAuthorityContext;
 }
-
-const HIGH_RISK_KINDS = new Set([
-  "value", "priority", "identity_trait", "style_rule",
-]);
-
-const RESTRICTED_PATHS = [
-  "core/values/",
-  "core/identity/",
-  "core/privacy/",
-];
-
-const TRUSTED_OWNER_CHANNEL_PREFIXES = [
-  "owner_private",
-  "project_private",
-];
 
 function inferActorRole(actorId: string | undefined): AuthorityActorRole | undefined {
   if (actorId === "owner") return "owner";
@@ -74,19 +60,20 @@ export function actorForAudit(
   return authority?.actor_id ?? authority?.actor_role ?? fallbackActor;
 }
 
-function isTrustedOwnerChannel(channel: string | undefined): boolean {
+function isTrustedOwnerChannel(channel: string | undefined, policy: AuthorityPolicy): boolean {
   if (!channel) return false;
-  return TRUSTED_OWNER_CHANNEL_PREFIXES.some((prefix) => channel.startsWith(prefix));
+  return policy.trustedOwnerChannelPrefixes.some((prefix) => channel.startsWith(prefix));
 }
 
 export function evaluateAuthority(request: OperationAuthorityRequest): AuthorityDecision {
-  const filePath = coreFilePath(request.kind);
+  const filePath = request.kind;
   const reasons: string[] = [];
+  const policy = request.policy ?? DEFAULT_AUTHORITY_POLICY;
 
-  if (RESTRICTED_PATHS.some((path) => filePath.startsWith(path))) {
+  if (policy.restrictedKinds.has(request.kind)) {
     reasons.push("restricted_domain");
   }
-  if (HIGH_RISK_KINDS.has(request.kind)) {
+  if (policy.highRiskKinds.has(request.kind)) {
     reasons.push("high_risk_kind");
   }
 
@@ -105,7 +92,7 @@ export function evaluateAuthority(request: OperationAuthorityRequest): Authority
 
   const hasExplicitAuthorization = authority.authorized === true;
   const hasTrustedOwnerAuthority = authority.actor_role === "owner"
-    && isTrustedOwnerChannel(authority.channel);
+    && isTrustedOwnerChannel(authority.channel, policy);
 
   return {
     allowed: hasExplicitAuthorization || hasTrustedOwnerAuthority,

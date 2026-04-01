@@ -5,7 +5,7 @@ import type { ParsedStore } from "../../src/store/reader.js";
 function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
   return {
     root: "/test", manifest: null, manifestFile: null,
-    events: [], proposals: [], curationPackets: [], coreObjects: [], contradictions: [],
+    events: [], proposals: [], curationPackets: [], coreObjects: [], entities: [], policyObjects: [], contradictions: [],
     files: [], parseErrors: [], ...overrides,
   };
 }

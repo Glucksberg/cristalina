@@ -9,6 +9,8 @@ const EXPECTED_DIRS = [
   "events",
   "proposals",
   "core",
+  "entities",
+  "policy",
   "compiled",
 ] as const;
 
@@ -17,7 +19,6 @@ const EXPECTED_CORE_DIRS = [
   "core/ratified",
   "core/identity",
   "core/values",
-  "core/privacy",
 ] as const;
 
 // Optional directories

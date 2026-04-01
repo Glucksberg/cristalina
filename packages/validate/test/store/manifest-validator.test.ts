@@ -5,7 +5,7 @@ import type { ParsedStore } from "../../src/store/reader.js";
 function makeStore(overrides: Partial<ParsedStore> = {}): ParsedStore {
   return {
     root: "/test", manifest: null, manifestFile: null,
-    events: [], proposals: [], curationPackets: [], coreObjects: [], contradictions: [],
+    events: [], proposals: [], curationPackets: [], coreObjects: [], entities: [], policyObjects: [], contradictions: [],
     files: [], parseErrors: [], ...overrides,
   };
 }
@@ -37,7 +37,17 @@ describe("validateManifest", () => {
           curation_protocol: "docs/CURATION-PROTOCOL.md",
           openclaw_adapter: "docs/adapters/OPENCLAW-ADAPTER.md",
         },
-        schemas: { manifest: "schemas/manifest.schema.json", event: "schemas/event.schema.json", proposal: "schemas/proposal.schema.json", memory_object: "schemas/memory-object.schema.json" },
+        schemas: {
+          manifest: "schemas/manifest.schema.json",
+          event: "schemas/event.schema.json",
+          proposal: "schemas/proposal.schema.json",
+          memory_object: "schemas/memory-object.schema.json",
+          entity: "schemas/entity.schema.json",
+          policy_object: "schemas/policy-object.schema.json",
+          derived_artifact: "schemas/derived-artifact.schema.json",
+          projection_manifest: "schemas/projection-manifest.schema.json",
+          adapter_writeback_contract: "schemas/adapter-writeback-contract.schema.json",
+        },
       },
       manifestFile: "manifest.yaml",
     });

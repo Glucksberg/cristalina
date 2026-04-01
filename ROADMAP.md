@@ -34,20 +34,20 @@ The immediate goal is to finish converging the current implementation into a coh
 - ratification normalization and operation planning
 - proposal type policy
 - provenance-aware promotion policy
+- first-class policy objects
 - audience-aware visibility model
 - actor and channel authority policy
 - stable entity and reference support
+- governed entity registry
 - compiler and bootstrap generation
 - writeback contract and projection manifest support
 - channel-profiled projection compilation
+- governed drift re-ingest for machine-parsable projection edits
 - sample store and fixtures
 
 ### Still not fully converged
 
 - docs still lag behind what the code already hardened in v3
-- sample store parity is not yet strong enough
-- policy is still distributed across executable code rather than modeled as first-class policy objects
-- adapter drift extraction is only contract-shaped, not yet fully realized as a governed ingest loop
 - the full system still needs a deliberate whole-architecture review before broader surface expansion
 
 ---
@@ -73,7 +73,7 @@ The immediate goal is to finish converging the current implementation into a coh
 ## Phase 1 - Canonical Model Freeze
 
 ### Status
-- substantially complete in code, still needs repo-wide parity cleanup
+- materially complete in code, still needs repo-wide parity cleanup and freeze review
 
 ### Goals
 - freeze what counts as canonical memory
@@ -120,7 +120,7 @@ The immediate goal is to finish converging the current implementation into a coh
 ## Phase 3 - Policy and Audience Engine
 
 ### Status
-- active and materially implemented, but not yet factored into first-class policy objects
+- materially implemented in code, including first-class policy objects
 
 ### Goals
 - replace path heuristics with policy-backed authority checks
@@ -166,7 +166,7 @@ The immediate goal is to finish converging the current implementation into a coh
 ## Phase 5 - OpenClaw Adapter Hardening
 
 ### Status
-- active, contract-complete enough to continue, not operationally complete yet
+- materially implemented in the repository, still needs broader adapter packaging and field validation
 
 ### Goals
 - implement the OpenClaw adapter against the converged contracts
@@ -187,13 +187,14 @@ The immediate goal is to finish converging the current implementation into a coh
 
 ---
 
-## Phase 6 - Repository Parity and Evaluation
+## Phase 6 - Repository Parity, Freeze, and Evaluation
 
 ### Status
 - not started as a focused pass
 
 ### Goals
 - verify that docs, schemas, fixtures, validator, and core agree
+- freeze the v3 baseline after whole-system review
 - measure whether the protocol improves real memory behavior instead of only feeling useful
 
 ### Deliverables
@@ -202,6 +203,7 @@ The immediate goal is to finish converging the current implementation into a coh
 - contradiction and supersession benchmarks
 - context efficiency measurements
 - curation acceptance and correction metrics
+- explicit freeze decision on remaining structural work vs. post-freeze ergonomics
 
 ---
 

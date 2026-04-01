@@ -3,6 +3,7 @@ import type { CristalinaStore } from "../store/store.js";
 import type { OperationResult } from "../operations/types.js";
 import { executeOperation } from "../operations/index.js";
 import { buildOperationPlan, normalizeDecision } from "./ratification-operations.js";
+import { resolvePolicyBundle } from "../policy/resolver.js";
 import type {
   CanonicalOperationPlan,
   CurationResponse,
@@ -38,6 +39,8 @@ export async function applyRatification(
   const skipped: string[] = [];
   const decisions: NormalizedDecision[] = [];
   const plans: CanonicalOperationPlan[] = [];
+  const snapshot = await store.read();
+  const policies = resolvePolicyBundle(snapshot);
 
   for (const response of input.responses) {
     const proposalId = input.questionToProposal.get(response.question_ref);
@@ -59,7 +62,10 @@ export async function applyRatification(
     const targetObject = targetObjectId ? await store.findById(targetObjectId) : null;
 
     const decision = normalizeDecision(proposal, response, targetObject);
-    const plan = buildOperationPlan(proposal, decision, targetObject);
+    const plan = buildOperationPlan(proposal, decision, targetObject, {
+      promotion: policies.promotion,
+      audience: policies.audience,
+    });
 
     decisions.push(decision);
     plans.push(plan);

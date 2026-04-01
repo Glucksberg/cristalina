@@ -4,6 +4,7 @@ import type { IdGenerator } from "../id/generator.js";
 import type { ConfirmInput, PlanResult, StoreEffect, AuditEntry } from "./types.js";
 import { coreFilePath } from "../store/paths.js";
 import { actorForAudit, enforceAuthority, resolveAuthorityContext } from "./authority.js";
+import { resolveAuthorityPolicy } from "../policy/resolver.js";
 
 export function planConfirm(
   store: ParsedStore,
@@ -16,11 +17,13 @@ export function planConfirm(
 
   const kind = typeof target.data.kind === "string" ? target.data.kind : "fact";
   const authority = resolveAuthorityContext(input.authority, input.authorized, input.confirmedBy);
+  const authorityPolicy = resolveAuthorityPolicy(store);
   enforceAuthority({
     operation: "CONFIRM",
     kind,
     targetId: input.targetId,
     authority,
+    policy: authorityPolicy,
   });
 
   const ts = clock.isoNow();

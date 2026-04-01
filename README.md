@@ -40,7 +40,9 @@ This repository provides:
 |   |-- manifest.schema.json
 |   |-- event.schema.json
 |   |-- proposal.schema.json
-|   `-- memory-object.schema.json
+|   |-- memory-object.schema.json
+|   |-- entity.schema.json
+|   `-- policy-object.schema.json
 |-- packages/
 |   |-- types/
 |   |-- validate/
@@ -82,20 +84,24 @@ The repository already implements:
 - append-only events
 - structured proposals with stable references
 - ratification normalization into canonical operations
+- multi-intent ratification planning
 - provenance-aware promotion policy
+- first-class policy objects
 - audience and authority evaluation
 - stable entity and relationship references
+- governed entity registry
 - HOT/WARM/COLD compiled context
 - bootstrap projection
 - channel-profiled runtime projection
 - OpenClaw writeback contract metadata
+- governed drift -> proposal extraction for machine-parsable projection edits
 
 ## Near-Term Roadmap
 
 - run full-system v3 review checkpoints before adding more primitives
-- bring docs and example store into parity with the current codepath
-- finish the drift -> proposal extraction loop for runtime-edited projections
+- keep docs, schemas, fixtures, and sample store in parity with the current codepath
 - decide which remaining gaps are still architectural and which are now repo hygiene
+- freeze the v3 baseline before expanding adapter surface or adding new protocol primitives
 
 ## Governance Files
 

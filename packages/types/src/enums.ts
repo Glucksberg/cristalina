@@ -189,6 +189,25 @@ export const EntityKind = z.enum([
 ]);
 export type EntityKind = z.infer<typeof EntityKind>;
 
+// --- Entity Status ---
+
+export const EntityStatus = z.enum([
+  "active",
+  "deprecated",
+  "archived",
+]);
+export type EntityStatus = z.infer<typeof EntityStatus>;
+
+// --- Policy Kind ---
+
+export const PolicyKind = z.enum([
+  "audience_policy",
+  "promotion_policy",
+  "authority_policy",
+  "projection_policy",
+]);
+export type PolicyKind = z.infer<typeof PolicyKind>;
+
 // --- Derived Artifact Type (OPENCLAW-ADAPTER.md §9-11) ---
 
 export const DerivedArtifactType = z.enum([

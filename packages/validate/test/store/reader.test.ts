@@ -19,6 +19,8 @@ describe("readStore", () => {
     expect(store.parseErrors).toHaveLength(0);
     expect(store.events.length).toBeGreaterThan(0);
     expect(store.coreObjects.length).toBeGreaterThan(0);
+    expect(store.entities.length).toBeGreaterThan(0);
+    expect(store.policyObjects.length).toBeGreaterThan(0);
   });
 
   it("reports not-found for missing directory", async () => {

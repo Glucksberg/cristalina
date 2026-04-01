@@ -52,6 +52,7 @@ export {
   buildProjectionManifest,
   wrapProjectionContent,
   buildRuntimeDriftLogInput,
+  ingestProjectionDrift,
 } from "./adapter/writeback.js";
 
 // Audit

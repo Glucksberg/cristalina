@@ -1,0 +1,18 @@
+items:
+  - id: ent-owner
+    kind: owner
+    name: Owner
+    status: active
+    privacy_scope: owner_private
+    aliases: [markus]
+    description: "Primary human authority over the Cristalina store."
+    created_at: "2026-03-29T02:00:00Z"
+  - id: ent-agent-cristalina
+    kind: agent
+    name: Cristalina
+    status: active
+    privacy_scope: owner_private
+    aliases: [assistant, cristalina]
+    description: "Persistent governed agent identity backed by this store."
+    channels: [owner_private_runtime]
+    created_at: "2026-03-29T02:00:00Z"
