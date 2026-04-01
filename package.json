@@ -7,7 +7,8 @@
     "test": "pnpm -r test",
     "generate-schemas": "pnpm --filter @cristalina/types generate-schemas",
     "openclaw": "node packages/openclaw/dist/cli.js",
-    "cli": "node packages/cli/dist/runner.js"
+    "cli": "node packages/cli/dist/cli.js",
+    "onboard:openclaw": "node scripts/onboard-openclaw.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

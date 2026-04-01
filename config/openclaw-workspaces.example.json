@@ -1,0 +1,19 @@
+{
+  "defaultStorePath": "examples/sample-store/.cristalina",
+  "workspaces": [
+    {
+      "name": "openclaw-local-a",
+      "path": "C:\\\\OpenClaw\\\\workspace-a",
+      "audience": "owner_private",
+      "channel": "owner_private_runtime",
+      "profile": "deep"
+    },
+    {
+      "name": "openclaw-local-b",
+      "path": "D:\\\\Agents\\\\openclaw-workspace-b",
+      "audience": "owner_private",
+      "channel": "owner_private_runtime",
+      "profile": "deep"
+    }
+  ]
+}

@@ -16,6 +16,7 @@ The format is based on Keep a Changelog, adapted for a protocol-first repository
 - `docs/CONSTITUTIONAL-CORE.md` as the proposed v4 constitutional architecture direction
 - `@cristalina/openclaw` as a minimal runtime adapter package with `bootstrap` and `ingest` commands
 - `cristalina` as an installable top-level CLI that routes `validate` and `openclaw`
+- a root `pnpm onboard:openclaw` script for choosing and bootstrapping mapped OpenClaw workspaces
 
 ### Changed
 - rebased `ROADMAP.md` around architecture v2 convergence instead of a purely future-looking core plan

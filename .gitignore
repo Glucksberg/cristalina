@@ -26,3 +26,6 @@ dist/
 *.bak
 *.tmp
 *.log
+
+# Local onboarding config
+config/openclaw-workspaces.local.json

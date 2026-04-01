@@ -129,6 +129,25 @@ Equivalent ephemeral usage:
 - `npx cristalina validate lint <path>`
 - `npx cristalina openclaw bootstrap --store <path> --workspace <path>`
 
+## OpenClaw Onboarding Script
+
+Before npm publishing, the repo also provides a root onboarding script for mapped OpenClaw workspaces:
+
+1. create `config/openclaw-workspaces.local.json` from `config/openclaw-workspaces.example.json`
+2. fill it with absolute paths to your OpenClaw runtime workspaces
+3. run:
+
+```bash
+pnpm onboard:openclaw
+```
+
+The script:
+- explains the Cristalina memory model briefly
+- lets you choose one mapped OpenClaw workspace
+- wipes that workspace safely
+- bootstraps `SOUL.md`, `VALUE.md`, `USER.md`, and `MEMORY.md`
+- writes `CRISTALINA-ONBOARDING.md` into the target workspace
+
 ## Near-Term Roadmap
 
 - keep docs, schemas, fixtures, and sample store in parity with the current codepath
