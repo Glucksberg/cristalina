@@ -15,6 +15,7 @@ The format is based on Keep a Changelog, adapted for a protocol-first repository
 - `docs/ARCHITECTURE-V2.md` as the active repository convergence document
 - `docs/CONSTITUTIONAL-CORE.md` as the proposed v4 constitutional architecture direction
 - `@cristalina/openclaw` as a minimal runtime adapter package with `bootstrap` and `ingest` commands
+- `cristalina` as an installable top-level CLI that routes `validate` and `openclaw`
 
 ### Changed
 - rebased `ROADMAP.md` around architecture v2 convergence instead of a purely future-looking core plan
@@ -23,6 +24,7 @@ The format is based on Keep a Changelog, adapted for a protocol-first repository
 - expanded `schemas/manifest.schema.json` so the manifest can declare the architecture convergence document
 - expanded the manifest surface so the repository can declare the constitutional core document
 - rebased repo docs and roadmap so OpenClaw is now a runnable v3 adapter surface, not only a hardened contract
+- reoriented the repository surface toward one-command npm installation through the top-level `cristalina` CLI
 
 ### Notes
 - repository work is now explicitly organized around canonical model freeze, proposal and ratification redesign, policy-backed privacy and authority, and adapter hardening

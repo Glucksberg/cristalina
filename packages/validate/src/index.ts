@@ -44,3 +44,10 @@ export {
   BACKUP_EXPECTATIONS,
 } from "./snapshot/types.js";
 export { snapshotExpectations } from "./snapshot/expectations.js";
+
+// CLI helpers
+export {
+  runValidateCli,
+  validateHelpText,
+  type CliIo as ValidateCliIo,
+} from "./cli.js";

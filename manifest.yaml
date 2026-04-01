@@ -18,8 +18,8 @@ modules:
     status: implemented-v3-hardening
   - name: "@cristalina/openclaw"
     status: implemented-minimal-runtime-adapter
-  - name: cristalina-cli
-    status: planned
+  - name: "cristalina"
+    status: implemented-installable-cli
 documents:
   spec: docs/SPEC.md
   data_model: docs/DATA-MODEL.md

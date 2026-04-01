@@ -45,6 +45,7 @@ This repository provides:
 |   |-- entity.schema.json
 |   `-- policy-object.schema.json
 |-- packages/
+|   |-- cli/
 |   |-- types/
 |   |-- validate/
 |   |-- core/
@@ -113,6 +114,20 @@ Typical loop:
 4. after runtime edits, run `pnpm openclaw ingest --store examples/sample-store/.cristalina --workspace <your-openclaw-workspace>`
 
 This is intentionally v3-only: bootstrap plus projection sync plus governed drift ingest, without the constitutional v4 runtime layer.
+
+## Installable CLI
+
+The installable surface is now the `cristalina` package.
+
+Intended usage after publish:
+1. `npm install -g cristalina`
+2. `cristalina validate lint <path-to-store>`
+3. `cristalina openclaw bootstrap --store <path-to-store> --workspace <path-to-workspace>`
+4. `cristalina openclaw ingest --store <path-to-store> --workspace <path-to-workspace>`
+
+Equivalent ephemeral usage:
+- `npx cristalina validate lint <path>`
+- `npx cristalina openclaw bootstrap --store <path> --workspace <path>`
 
 ## Near-Term Roadmap
 

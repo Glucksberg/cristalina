@@ -6,7 +6,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "generate-schemas": "pnpm --filter @cristalina/types generate-schemas",
-    "openclaw": "node packages/openclaw/dist/cli.js"
+    "openclaw": "node packages/openclaw/dist/cli.js",
+    "cli": "node packages/cli/dist/runner.js"
   },
   "engines": {
     "node": ">=20.0.0"

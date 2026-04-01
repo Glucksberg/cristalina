@@ -7,3 +7,8 @@ export {
   type OpenClawIngestOptions,
   type OpenClawIngestResult,
 } from "./workspace.js";
+export {
+  runOpenClawCli,
+  openClawHelpText,
+  type CliIo as OpenClawCliIo,
+} from "./cli.js";

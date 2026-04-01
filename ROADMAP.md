@@ -263,6 +263,11 @@ The remaining foundation blockers identified in the previous checkpoint are now 
 - Python runtimes
 - TypeScript runtimes
 
+### Packaging baseline
+- `cristalina` should exist as the installable npm-facing CLI
+- `@cristalina/openclaw` and `@cristalina/validate` should remain separately consumable packages
+- one-command install should be possible through `npm install -g cristalina` or `npx cristalina ...`
+
 ---
 
 ## Phase 8 - Constitutional Core

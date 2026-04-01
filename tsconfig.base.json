@@ -16,7 +16,9 @@
     "paths": {
       "@cristalina/types": ["packages/types/src/index.ts"],
       "@cristalina/validate": ["packages/validate/src/index.ts"],
-      "@cristalina/core": ["packages/core/src/index.ts"]
+      "@cristalina/core": ["packages/core/src/index.ts"],
+      "@cristalina/openclaw": ["packages/openclaw/src/index.ts"],
+      "cristalina": ["packages/cli/src/index.ts"]
     }
   }
 }
