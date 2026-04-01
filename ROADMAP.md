@@ -201,7 +201,7 @@ The remaining foundation blockers identified in the previous checkpoint are now 
 ## Phase 5 - OpenClaw Adapter Hardening
 
 ### Status
-- materially implemented in the repository, still needs broader adapter packaging and field validation
+- minimally runnable in the repository, broader adapter packaging and long-running runtime tooling still remain
 
 ### Goals
 - implement the OpenClaw adapter against the converged contracts
@@ -219,6 +219,12 @@ The remaining foundation blockers identified in the previous checkpoint are now 
 - generated files are clearly marked as derived
 - runtime edits become drift evidence and proposals, not canonical writes
 - projection profiles are audience-safe and token-budget-aware
+
+### Current baseline
+- `@cristalina/openclaw` exists as a minimal runnable adapter surface
+- bootstrap sync writes `SOUL.md`, `VALUE.md`, `USER.md`, and `MEMORY.md` into a target workspace
+- ingest converts edited workspace files back into governed drift evidence and proposals
+- long-running watch mode and broader packaging are still post-baseline work
 
 ---
 

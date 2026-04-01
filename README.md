@@ -47,7 +47,8 @@ This repository provides:
 |-- packages/
 |   |-- types/
 |   |-- validate/
-|   `-- core/
+|   |-- core/
+|   `-- openclaw/
 `-- examples/
     `-- sample-store/
         `-- .cristalina/
@@ -99,6 +100,19 @@ The repository already implements:
 - channel-profiled runtime projection
 - OpenClaw writeback contract metadata
 - governed drift -> proposal extraction for machine-parsable projection edits
+- a minimal `cristalina-openclaw` bootstrap and ingest CLI over the v3 contracts
+
+## Run OpenClaw Against v3
+
+The minimal adapter package is `@cristalina/openclaw` with the `cristalina-openclaw` bin.
+
+Typical loop:
+1. `pnpm build`
+2. `pnpm openclaw bootstrap --store examples/sample-store/.cristalina --workspace <your-openclaw-workspace>`
+3. point OpenClaw at `SOUL.md`, `VALUE.md`, `USER.md`, and `MEMORY.md` in that workspace
+4. after runtime edits, run `pnpm openclaw ingest --store examples/sample-store/.cristalina --workspace <your-openclaw-workspace>`
+
+This is intentionally v3-only: bootstrap plus projection sync plus governed drift ingest, without the constitutional v4 runtime layer.
 
 ## Near-Term Roadmap
 

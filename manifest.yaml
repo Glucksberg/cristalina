@@ -16,8 +16,8 @@ modules:
     status: implemented-v3-hardening
   - name: "@cristalina/core"
     status: implemented-v3-hardening
-  - name: cristalina-openclaw
-    status: contract-hardened-partial-implementation
+  - name: "@cristalina/openclaw"
+    status: implemented-minimal-runtime-adapter
   - name: cristalina-cli
     status: planned
 documents:

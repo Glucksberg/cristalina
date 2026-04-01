@@ -1,7 +1,7 @@
 {
-  "name": "@cristalina/core",
+  "name": "@cristalina/openclaw",
   "version": "0.1.0",
-  "description": "Reference implementation of the Cristalina memory protocol write path",
+  "description": "Minimal OpenClaw runtime adapter for Cristalina v3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,6 +10,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
+  },
+  "bin": {
+    "cristalina-openclaw": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -20,9 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cristalina/types": "workspace:*",
-    "@cristalina/validate": "workspace:*",
-    "fast-glob": "^3.3.0",
+    "@cristalina/core": "workspace:*",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
