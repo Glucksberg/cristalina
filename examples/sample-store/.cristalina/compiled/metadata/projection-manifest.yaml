@@ -159,8 +159,9 @@ contract:
       requires_human_review: true
       allowed_operations:
         - create
+        - confirm
         - revise
-        - supersede
+        - deprecate
       provenance_source: openclaw_projection_drift
     - path: compiled/bootstrap/VALUE.md
       artifact_type: bootstrap_value
@@ -170,8 +171,8 @@ contract:
       requires_human_review: true
       allowed_operations:
         - create
+        - confirm
         - revise
-        - supersede
         - deprecate
       provenance_source: openclaw_projection_drift
     - path: compiled/bootstrap/USER.md
@@ -184,7 +185,7 @@ contract:
         - create
         - confirm
         - revise
-        - supersede
+        - deprecate
       provenance_source: openclaw_projection_drift
     - path: compiled/bootstrap/MEMORY.md
       artifact_type: bootstrap_memory
@@ -195,5 +196,6 @@ contract:
       allowed_operations:
         - create
         - confirm
-        - contradict
+        - revise
+        - deprecate
       provenance_source: openclaw_projection_drift

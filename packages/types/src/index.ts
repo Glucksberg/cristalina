@@ -16,6 +16,7 @@ export {
   EntityKind,
   EntityStatus,
   PolicyKind,
+  PolicyStatus,
   DerivedArtifactType,
   WritebackMode,
   ProjectionProfile,

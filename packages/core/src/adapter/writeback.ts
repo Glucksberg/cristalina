@@ -55,7 +55,7 @@ export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
       machine_extractable_sections: ["identity", "style"],
       default_confidence: 0.72,
       requires_human_review: true,
-      allowed_operations: ["create", "revise", "supersede"],
+      allowed_operations: ["create", "confirm", "revise", "deprecate"],
       provenance_source: "openclaw_projection_drift",
     },
     {
@@ -65,7 +65,7 @@ export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
       machine_extractable_sections: ["values"],
       default_confidence: 0.64,
       requires_human_review: true,
-      allowed_operations: ["create", "revise", "supersede", "deprecate"],
+      allowed_operations: ["create", "confirm", "revise", "deprecate"],
       provenance_source: "openclaw_projection_drift",
     },
     {
@@ -75,7 +75,7 @@ export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
       machine_extractable_sections: ["preferences", "known_facts"],
       default_confidence: 0.76,
       requires_human_review: true,
-      allowed_operations: ["create", "confirm", "revise", "supersede"],
+      allowed_operations: ["create", "confirm", "revise", "deprecate"],
       provenance_source: "openclaw_projection_drift",
     },
     {
@@ -85,7 +85,7 @@ export const OPENCLAW_WRITEBACK_CONTRACT: AdapterWritebackContract = {
       machine_extractable_sections: ["active_memory", "open_loops"],
       default_confidence: 0.58,
       requires_human_review: true,
-      allowed_operations: ["create", "confirm", "contradict"],
+      allowed_operations: ["create", "confirm", "revise", "deprecate"],
       provenance_source: "openclaw_projection_drift",
     },
   ],
@@ -330,7 +330,7 @@ function sectionKind(sectionName: string): "identity_trait" | "style_rule" | "va
 
 function proposalTypeForKind(
   kind: ReturnType<typeof sectionKind>,
-  operation: "create" | "confirm" | "deprecate",
+  operation: "create" | "confirm" | "revise" | "deprecate",
 ): ProposeInput["type"] {
   if (kind === "value") return operation === "create" ? "new_value" : "revise_value";
   if (kind === "identity_trait" || kind === "style_rule") {
@@ -341,7 +341,7 @@ function proposalTypeForKind(
     return "revise_preference";
   }
   if (operation === "deprecate") return "deprecate_memory";
-  return operation === "confirm" ? "revise_fact" : "new_fact";
+  return operation === "create" ? "new_fact" : "revise_fact";
 }
 
 function policyTagsForKind(kind: ReturnType<typeof sectionKind>): string[] | undefined {
@@ -366,7 +366,7 @@ function defaultTargetRef(
   sectionName: string,
 ): ProposeInput["target_ref"] {
   if (kind === "identity_trait" || kind === "style_rule") {
-    const agent = storeSnapshot.entities.find((entity) => entity.data.kind === "agent");
+    const agent = storeSnapshot.entities.find((entity) => entity.data.kind === "agent" && entity.data.status === "active");
     if (agent && typeof agent.data.id === "string") {
       return {
         entity_id: agent.data.id,
@@ -376,7 +376,7 @@ function defaultTargetRef(
     }
   }
 
-  const owner = storeSnapshot.entities.find((entity) => entity.data.kind === "owner");
+  const owner = storeSnapshot.entities.find((entity) => entity.data.kind === "owner" && entity.data.status === "active");
   if (owner && typeof owner.data.id === "string") {
     return {
       entity_id: owner.data.id,
@@ -398,6 +398,37 @@ function findExistingObject(
     && obj.data.statement === statement
     && obj.data.status !== "deprecated"
     && obj.data.status !== "archived");
+}
+
+async function emitProposal(
+  store: CristalinaStore,
+  supportingEventId: string | undefined,
+  input: IngestProjectionDriftInput,
+  kind: ReturnType<typeof sectionKind>,
+  section: string,
+  operation: "create" | "confirm" | "revise" | "deprecate",
+  statement: string,
+  target_ref: ProposeInput["target_ref"],
+  reason: string,
+): Promise<OperationResult> {
+  return executeOperation(store, {
+    op: "PROPOSE",
+    type: proposalTypeForKind(kind, operation),
+    operation,
+    target_ref,
+    candidate_payload: {
+      kind,
+      statement,
+      privacy_scope: input.audience,
+    },
+    reason,
+    provenance: { supporting_events: supportingEventId ? [supportingEventId] : [] },
+    confidence: writebackRuleForPath(input.path)?.default_confidence ?? 0.5,
+    privacy_scope: input.audience,
+    actor: input.actor ?? OPENCLAW_WRITEBACK_CONTRACT.adapter,
+    policy_tags: policyTagsForKind(kind),
+    risk: riskForKind(kind),
+  });
 }
 
 export async function ingestProjectionDrift(
@@ -443,30 +474,49 @@ export async function ingestProjectionDrift(
     const added = after.filter((statement) => !previousSet.has(statement));
     const removed = before.filter((statement) => !currentSet.has(statement));
 
+    if (added.length === 1 && removed.length === 1) {
+      const oldStatement = removed[0];
+      const newStatement = added[0];
+      const existingOld = findExistingObject(snapshot, kind, oldStatement);
+      const existingNew = findExistingObject(snapshot, kind, newStatement);
+
+      if (existingOld && typeof existingOld.data.id === "string" && !existingNew) {
+        proposals.push(await emitProposal(
+          store,
+          supportingEventId,
+          input,
+          kind,
+          section,
+          "revise",
+          newStatement,
+          {
+            object_id: existingOld.data.id,
+            kind,
+            facet: section,
+          },
+          `Runtime drift revised "${oldStatement}" into "${newStatement}" in ${input.path} section ${section}`,
+        ));
+        continue;
+      }
+    }
+
     for (const statement of added) {
       const existing = findExistingObject(snapshot, kind, statement);
       const operation: ProposeInput["operation"] = existing ? "confirm" : "create";
       const target_ref = existing && typeof existing.data.id === "string"
         ? { object_id: existing.data.id, kind, facet: section }
         : defaultTargetRef(snapshot, kind, section);
-      const proposal = await executeOperation(store, {
-        op: "PROPOSE",
-        type: proposalTypeForKind(kind, operation),
+      const proposal = await emitProposal(
+        store,
+        supportingEventId,
+        input,
+        kind,
+        section,
         operation,
+        statement,
         target_ref,
-        candidate_payload: {
-          kind,
-          statement,
-          privacy_scope: input.audience,
-        },
-        reason: `Runtime drift extracted from ${input.path} section ${section}`,
-        provenance: { supporting_events: supportingEventId ? [supportingEventId] : [] },
-        confidence: rule.default_confidence,
-        privacy_scope: input.audience,
-        actor: input.actor ?? OPENCLAW_WRITEBACK_CONTRACT.adapter,
-        policy_tags: policyTagsForKind(kind),
-        risk: riskForKind(kind),
-      });
+        `Runtime drift extracted from ${input.path} section ${section}`,
+      );
       proposals.push(proposal);
     }
 
@@ -474,28 +524,21 @@ export async function ingestProjectionDrift(
       const existing = findExistingObject(snapshot, kind, statement);
       if (!existing || typeof existing.data.id !== "string") continue;
 
-      const proposal = await executeOperation(store, {
-        op: "PROPOSE",
-        type: proposalTypeForKind(kind, "deprecate"),
-        operation: "deprecate",
-        target_ref: {
+      const proposal = await emitProposal(
+        store,
+        supportingEventId,
+        input,
+        kind,
+        section,
+        "deprecate",
+        statement,
+        {
           object_id: existing.data.id,
           kind,
           facet: section,
         },
-        candidate_payload: {
-          kind,
-          statement,
-          privacy_scope: input.audience,
-        },
-        reason: `Runtime drift removed "${statement}" from ${input.path} section ${section}`,
-        provenance: { supporting_events: supportingEventId ? [supportingEventId] : [] },
-        confidence: rule.default_confidence,
-        privacy_scope: input.audience,
-        actor: input.actor ?? OPENCLAW_WRITEBACK_CONTRACT.adapter,
-        policy_tags: policyTagsForKind(kind),
-        risk: riskForKind(kind),
-      });
+        `Runtime drift removed "${statement}" from ${input.path} section ${section}`,
+      );
       proposals.push(proposal);
     }
   }

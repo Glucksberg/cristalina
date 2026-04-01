@@ -144,6 +144,8 @@ Canonical changes MUST happen through one of the following:
 - ratification workflow
 - deterministic protocol transformation authorized by policy
 
+`entities/` and `policy/` remain repository-governed domains. They are not ordinary free-write memory surfaces.
+
 ### 6.4 Interpretation guardrail
 The system MUST preserve the user's meaning faithfully when applying a human-approved update. Silent reinterpretation is forbidden.
 
@@ -572,6 +574,8 @@ Implementations SHOULD validate:
 - compiled-context drift
 - missing entity references
 - malformed policy objects
+- ambiguous policy selection
+- invalid owner or agent registry cardinality
 
 ---
 

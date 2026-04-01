@@ -169,6 +169,13 @@ Runtime edits are ignored by the core.
 #### Mode B — Proposal extraction
 Runtime edits are parsed into proposals for review.
 
+In the current repository baseline, machine-parsable extraction is limited to:
+
+- `create`
+- `confirm`
+- `revise`
+- `deprecate`
+
 #### Mode C — Restricted deterministic writeback
 Only specific machine-safe fields are synchronized under explicit policy.
 

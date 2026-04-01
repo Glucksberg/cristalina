@@ -1,5 +1,6 @@
 id: pol-promotion-default
 kind: promotion_policy
+status: active
 default_question_count: 3
 max_question_count: 5
 high_risk_kinds: [value, priority, identity_trait, style_rule]

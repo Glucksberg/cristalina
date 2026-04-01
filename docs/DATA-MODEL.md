@@ -8,11 +8,13 @@ This document defines the primary data objects, fields, states, and relationship
 
 ## 1. Overview
 
-Cristalina stores memory as typed objects distributed across four main classes:
+Cristalina stores governed state as typed objects distributed across six main classes:
 
 - Event
 - Proposal
 - Canonical Memory Object
+- Entity
+- Policy Object
 - Derived Artifact
 
 Each object class serves a distinct role. Implementations MUST preserve these distinctions.
@@ -101,6 +103,8 @@ risk:
 created_at: 2026-03-29T03:05:00Z
 created_by: agent
 ```
+
+`candidate_payload` MAY also carry deterministic `follow_up_payloads` when one proposal is already known to ratify into more than one canonical operation.
 
 ### Allowed `status` values
 
@@ -308,7 +312,78 @@ privacy_scope: owner_private
 
 ---
 
-## 2.8 Derived Artifact
+## 2.8 Entity Object
+
+Entities provide stable registry-backed anchors for references across memory, curation, and projection.
+
+```yaml
+id: ent-owner
+kind: owner
+name: Owner
+status: active
+privacy_scope: owner_private
+aliases: [markus]
+channels: [owner_private_runtime]
+created_at: 2026-03-29T02:00:00Z
+```
+
+### Required fields
+
+- `id`
+- `kind`
+- `name`
+- `status`
+- `privacy_scope`
+
+### Recommended fields
+
+- `aliases`
+- `description`
+- `channels`
+- `created_at`
+- `updated_at`
+
+### v3 repository rule
+
+- entities remain registry-governed objects under `entities/`
+- Cristalina v3 expects exactly one active `owner` and one active `agent` entity per store
+
+---
+
+## 2.9 Policy Object
+
+Policy objects define governance and projection behavior for a store.
+
+### Required fields
+
+```yaml
+id: pol-projection-default
+kind: projection_policy
+status: active
+```
+
+### Supported `kind` values
+
+- `audience_policy`
+- `promotion_policy`
+- `authority_policy`
+- `projection_policy`
+
+### Supported `status` values
+
+- `active`
+- `draft`
+- `deprecated`
+
+### v3 repository rule
+
+- each policy kind MAY have drafts
+- each policy kind MUST have at most one active definition
+- if multiple non-deprecated definitions exist with no active selector, the store is structurally ambiguous
+
+---
+
+## 2.10 Derived Artifact
 
 Derived artifacts are generated outputs, not canonical truth.
 
@@ -539,6 +614,8 @@ A compliant implementation SHOULD reject or flag:
 - illegal automatic scope escalation
 - supersession references to missing objects
 - contradiction records missing both sides
+- ambiguous active policy selection
+- entity registry ambiguity around owner, agent, or aliases
 
 ---
 

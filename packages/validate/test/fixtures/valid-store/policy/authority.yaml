@@ -1,5 +1,6 @@
 id: pol-authority-default
 kind: authority_policy
+status: active
 high_risk_kinds: [value, priority, identity_trait, style_rule]
 restricted_kinds: [value, priority, identity_trait, style_rule]
 trusted_owner_channel_prefixes: [owner_private, project_private]

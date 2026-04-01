@@ -16,12 +16,28 @@ export function stableReferences(store: ParsedStore): Diagnostic[] {
       .map((obj) => typeof obj.data.id === "string" ? obj.data.id : null)
       .filter((id): id is string => id !== null),
   );
+  const entityStatus = new Map(
+    store.entities
+      .map((obj) =>
+        typeof obj.data.id === "string"
+          ? [obj.data.id, typeof obj.data.status === "string" ? obj.data.status : null] as const
+          : null)
+      .filter((entry): entry is readonly [string, string | null] => entry !== null),
+  );
 
   for (const obj of store.coreObjects) {
     for (const entityId of collectEntityRefs(obj.data.related_entities)) {
       if (!entityIds.has(entityId)) {
         diagnostics.push(
           warning(RULE, `Object references missing entity "${entityId}" outside the entity registry.`, {
+            file: obj.file,
+            objectId: typeof obj.data.id === "string" ? obj.data.id : undefined,
+            path: "related_entities",
+          }),
+        );
+      } else if (entityStatus.get(entityId) !== "active") {
+        diagnostics.push(
+          warning(RULE, `Object references non-active entity "${entityId}".`, {
             file: obj.file,
             objectId: typeof obj.data.id === "string" ? obj.data.id : undefined,
             path: "related_entities",
@@ -57,17 +73,25 @@ export function stableReferences(store: ParsedStore): Diagnostic[] {
       );
     }
 
-    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "from_ref", obj.data.from_ref, canonicalIds, entityIds, diagnostics);
-    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "to_ref", obj.data.to_ref, canonicalIds, entityIds, diagnostics);
+    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "from_ref", obj.data.from_ref, canonicalIds, entityIds, entityStatus, diagnostics);
+    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "to_ref", obj.data.to_ref, canonicalIds, entityIds, entityStatus, diagnostics);
   }
 
   for (const obj of store.proposals) {
-    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "target_ref", obj.data.target_ref, canonicalIds, entityIds, diagnostics);
+    validateStableRef(obj.file, typeof obj.data.id === "string" ? obj.data.id : undefined, "target_ref", obj.data.target_ref, canonicalIds, entityIds, entityStatus, diagnostics);
 
     for (const entityId of collectEntityRefs((obj.data.candidate_payload as Record<string, unknown> | undefined)?.related_entities)) {
       if (!entityIds.has(entityId)) {
         diagnostics.push(
           warning(RULE, `Proposal references missing entity "${entityId}" outside the entity registry.`, {
+            file: obj.file,
+            objectId: typeof obj.data.id === "string" ? obj.data.id : undefined,
+            path: "candidate_payload.related_entities",
+          }),
+        );
+      } else if (entityStatus.get(entityId) !== "active") {
+        diagnostics.push(
+          warning(RULE, `Proposal references non-active entity "${entityId}".`, {
             file: obj.file,
             objectId: typeof obj.data.id === "string" ? obj.data.id : undefined,
             path: "candidate_payload.related_entities",
@@ -93,6 +117,7 @@ function validateStableRef(
   refValue: unknown,
   canonicalIds: Set<string>,
   entityIds: Set<string>,
+  entityStatus: Map<string, string | null>,
   diagnostics: Diagnostic[],
 ): void {
   if (typeof refValue !== "object" || refValue === null) return;
@@ -111,6 +136,14 @@ function validateStableRef(
   if (typeof ref.entity_id === "string" && !entityIds.has(ref.entity_id)) {
     diagnostics.push(
       warning(RULE, `Stable reference points to missing entity "${ref.entity_id}".`, {
+        file,
+        objectId,
+        path: `${path}.entity_id`,
+      }),
+    );
+  } else if (typeof ref.entity_id === "string" && entityStatus.get(ref.entity_id) !== "active") {
+    diagnostics.push(
+      warning(RULE, `Stable reference points to non-active entity "${ref.entity_id}".`, {
         file,
         objectId,
         path: `${path}.entity_id`,

@@ -124,6 +124,11 @@ Examples include:
 - audience policies
 - promotion policies
 
+Repository rule for v3 freeze:
+
+- each policy kind may define drafts, but only one active policy may govern selection at a time
+- if multiple non-deprecated policies exist without an active selector, the repository is structurally ambiguous
+
 ### 4.2 Add a first-class entity layer
 
 Cristalina v2 introduces the concept of stable entities.
@@ -136,6 +141,12 @@ At minimum, implementations should support entities for:
 - runtime
 - channel or audience context
 - external person or organization when memory needs to refer to them durably
+
+Repository rule for v3 freeze:
+
+- entities remain a governed registry layer under `entities/`
+- they are not ordinary memory operations in the v3 write path
+- Cristalina v3 assumes exactly one active owner entity and one active agent entity per store
 
 ### 4.3 Relationships must point to stable references
 
@@ -232,6 +243,8 @@ One edited answer may legitimately become:
 - one style rule plus one scoped preference
 
 The normalization step must preserve meaning faithfully and remain auditable.
+
+For v3 freeze, repository implementations SHOULD also support deterministic decomposition of structured edit answers, for example bullet lists or `kind: statement` follow-ups, into multi-intent apply plans.
 
 ### 6.4 Text answers are not enough
 
@@ -362,6 +375,11 @@ If runtime drift is converted into proposals, the adapter must define:
 - when human review is mandatory
 
 Without this, Mode B becomes hand-wavy and unsafe.
+
+For v3 freeze, the repository contract is explicit:
+
+- machine-parsable drift currently extracts `create`, `confirm`, `revise`, and `deprecate`
+- unsupported semantics must remain drift evidence until a safe extractor exists
 
 ---
 

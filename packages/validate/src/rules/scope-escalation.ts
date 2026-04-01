@@ -6,8 +6,25 @@ import type { ParsedStore } from "../store/reader.js";
 const RULE = "scope-escalation";
 const VALID_SCOPES = new Set(PrivacyScope.options);
 
+function policyStatus(value: Record<string, unknown>): "active" | "draft" | "deprecated" {
+  return value.status === "draft" || value.status === "deprecated" ? value.status : "active";
+}
+
 function resolveAudienceMatrix(store: ParsedStore): Record<PrivacyScope, readonly PrivacyScope[]> {
-  const policy = store.policyObjects.find((obj) => obj.data.kind === "audience_policy");
+  const policy = [...store.policyObjects]
+    .filter((obj) => obj.data.kind === "audience_policy")
+    .sort((a, b) => {
+      const aVersion = typeof (a.data.metadata as Record<string, unknown> | undefined)?.version === "number"
+        ? (a.data.metadata as Record<string, unknown>).version as number
+        : 0;
+      const bVersion = typeof (b.data.metadata as Record<string, unknown> | undefined)?.version === "number"
+        ? (b.data.metadata as Record<string, unknown>).version as number
+        : 0;
+      return bVersion - aVersion;
+    })
+    .find((obj) => policyStatus(obj.data) === "active")
+    ?? [...store.policyObjects].find((obj) => obj.data.kind === "audience_policy" && policyStatus(obj.data) !== "deprecated")
+    ?? null;
   if (!policy) {
     return {
       owner_private: ["owner_private", "agent_operational", "project_private", "shareable", "public_safe"],

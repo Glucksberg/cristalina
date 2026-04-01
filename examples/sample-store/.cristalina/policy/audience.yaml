@@ -1,5 +1,6 @@
 id: pol-audience-default
 kind: audience_policy
+status: active
 default_scope: owner_private
 policy_mode: audience_aware
 escalation_rule: no_automatic_privacy_escalation

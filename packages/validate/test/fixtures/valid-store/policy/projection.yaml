@@ -1,5 +1,6 @@
 id: pol-projection-default
 kind: projection_policy
+status: active
 default_profiles:
   owner_private: deep
   agent_operational: standard

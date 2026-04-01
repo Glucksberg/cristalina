@@ -12,6 +12,8 @@ import { contradictionIntegrity } from "./contradiction-integrity.js";
 import { scopeEscalation } from "./scope-escalation.js";
 import { stableReferences } from "./stable-references.js";
 import { storeStructure } from "./store-structure.js";
+import { policySelection } from "./policy-selection.js";
+import { entityGovernance } from "./entity-governance.js";
 import { snapshotExpectations } from "../snapshot/expectations.js";
 
 export type Rule = (store: ParsedStore) => Diagnostic[];
@@ -27,6 +29,8 @@ export const ALL_RULES: readonly Rule[] = [
   contradictionIntegrity,
   scopeEscalation,
   stableReferences,
+  policySelection,
+  entityGovernance,
   storeStructure,
   snapshotExpectations,
 ];
@@ -42,6 +46,8 @@ export {
   contradictionIntegrity,
   scopeEscalation,
   stableReferences,
+  policySelection,
+  entityGovernance,
   storeStructure,
   snapshotExpectations,
 };

@@ -85,8 +85,10 @@ The repository already implements:
 - structured proposals with stable references
 - ratification normalization into canonical operations
 - multi-intent ratification planning
+- structured edit decomposition for multi-intent ratification
 - provenance-aware promotion policy
 - first-class policy objects
+- deterministic policy selection
 - audience and authority evaluation
 - stable entity and relationship references
 - governed entity registry
@@ -98,9 +100,9 @@ The repository already implements:
 
 ## Near-Term Roadmap
 
-- run full-system v3 review checkpoints before adding more primitives
 - keep docs, schemas, fixtures, and sample store in parity with the current codepath
-- decide which remaining gaps are still architectural and which are now repo hygiene
+- run freeze and evaluation passes before adding more primitives
+- measure contradiction handling, curation quality, and projection usefulness
 - freeze the v3 baseline before expanding adapter surface or adding new protocol primitives
 
 ## Governance Files
@@ -116,4 +118,4 @@ The repository already implements:
 
 - Protocol version: `1.0-draft`
 - Repository version: `0.3.0-dev`
-- Maturity: active v3 hardening on top of architecture v2 convergence
+- Maturity: v3 parity and freeze on top of architecture v2 convergence

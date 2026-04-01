@@ -156,9 +156,115 @@ function buildDecision(
   };
 }
 
+interface ParsedEditSegment {
+  kind: MemoryObjectKindType;
+  privacy_scope: PrivacyScopeType;
+  statement: string;
+}
+
+function parseEditSegment(
+  raw: string,
+  fallbackKind: MemoryObjectKindType,
+  fallbackScope: PrivacyScopeType | null,
+): ParsedEditSegment | null {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0 || !fallbackScope) return null;
+
+  const match = trimmed.match(/^(?<kind>[a-z_]+)(?:\s*\[(?<scope>[a-z_]+)\])?\s*:\s*(?<statement>.+)$/);
+  if (!match?.groups) {
+    return {
+      kind: fallbackKind,
+      privacy_scope: fallbackScope,
+      statement: trimmed,
+    };
+  }
+
+  const kind = isMemoryObjectKind(match.groups.kind) ? match.groups.kind : fallbackKind;
+  const scope = isPrivacyScope(match.groups.scope) ? match.groups.scope : fallbackScope;
+  const statement = match.groups.statement.trim();
+  if (!statement.length) return null;
+
+  return {
+    kind,
+    privacy_scope: scope,
+    statement,
+  };
+}
+
+function parseStructuredEditAnswer(
+  editedText: string,
+  fallbackKind: MemoryObjectKindType,
+  fallbackScope: PrivacyScopeType | null,
+): { primary: ParsedEditSegment; followUps: ParsedEditSegment[] } | null {
+  const trimmed = editedText.trim();
+  if (!trimmed.includes("\n")) return null;
+
+  const lines = trimmed.split(/\r?\n/);
+  const prelude: string[] = [];
+  const bulletLines: string[] = [];
+
+  for (const line of lines) {
+    const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.+)$/);
+    if (bullet) {
+      bulletLines.push(bullet[1]);
+    } else if (bulletLines.length === 0 && line.trim().length > 0) {
+      prelude.push(line.trim());
+    } else if (line.trim().length > 0) {
+      bulletLines.push(line.trim());
+    }
+  }
+
+  if (bulletLines.length === 0) return null;
+
+  const segments: ParsedEditSegment[] = [];
+  if (prelude.length > 0) {
+    const primary = parseEditSegment(prelude.join(" "), fallbackKind, fallbackScope);
+    if (primary) segments.push(primary);
+  }
+
+  for (const bullet of bulletLines) {
+    const segment = parseEditSegment(bullet, fallbackKind, fallbackScope);
+    if (segment) segments.push(segment);
+  }
+
+  if (segments.length < 2) return null;
+
+  return {
+    primary: segments[0],
+    followUps: segments.slice(1),
+  };
+}
+
 function withEditedStatement(context: NormalizationContext, operation = context.seed.operation): NormalizedDecision {
   if (context.response.answer_type !== "edit" || context.seed.editedText.length === 0) {
     return buildDecision(context.response, context.seed, operation);
+  }
+
+  const fallbackKind = isMemoryObjectKind(context.seed.candidatePayload.kind)
+    ? context.seed.candidatePayload.kind
+    : "fact";
+  const fallbackScope = isPrivacyScope(context.seed.candidatePayload.privacy_scope)
+    ? context.seed.candidatePayload.privacy_scope
+    : null;
+  const structured = parseStructuredEditAnswer(
+    context.seed.editedText,
+    fallbackKind,
+    fallbackScope,
+  );
+
+  if (structured) {
+    return buildDecision(
+      context.response,
+      context.seed,
+      operation,
+      {
+        ...context.seed.candidatePayload,
+        kind: structured.primary.kind,
+        privacy_scope: structured.primary.privacy_scope,
+        statement: structured.primary.statement,
+        follow_up_payloads: structured.followUps,
+      },
+    );
   }
 
   return buildDecision(

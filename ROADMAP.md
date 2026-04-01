@@ -2,7 +2,7 @@
 
 ## Status
 
-Cristalina is currently in the **v3 freeze review** phase.
+Cristalina is currently in the **v3 parity and freeze** phase.
 
 The repository is no longer only a protocol draft. It already contains working implementation surface in:
 
@@ -12,14 +12,14 @@ The repository is no longer only a protocol draft. It already contains working i
 
 The immediate goal is no longer to define the shape of the system in the abstract.
 
-The immediate goal is to freeze the current implementation into a coherent end-to-end v3:
+The immediate goal is to freeze the current implementation into a coherent end-to-end v3 baseline:
 
 - event -> proposal -> ratification -> canonical apply
 - authority -> audience -> projection policy
 - canonical core -> compiler -> adapter writeback
 - docs -> schemas -> fixtures -> executable behavior
 
-`docs/ARCHITECTURE-V2.md` remains the convergence base, but the repository is now beyond pure v2 clarification work and into executable v3 freeze review.
+`docs/ARCHITECTURE-V2.md` remains the convergence base, but the repository is now beyond pure v2 clarification work and into executable v3 parity and freeze work.
 
 ---
 
@@ -48,22 +48,24 @@ The immediate goal is to freeze the current implementation into a coherent end-t
 ### Still not fully converged
 
 - docs still lag behind what the code already hardened in v3
-- the full system still needs a deliberate whole-architecture review before broader surface expansion
+- the full system still needs a deliberate freeze and evaluation pass before broader surface expansion
 
 ### Checkpoint outcome
 
-The current v3 codepath already expresses the main protocol thesis end to end:
+The current v3 codepath now expresses the main protocol thesis end to end:
 
 - `event -> proposal -> ratification -> canonical apply -> projection -> drift -> re-ingest`
 
 What remains is no longer a wide field of architectural ambiguity. It is a narrower decision surface split into three buckets.
 
-#### Still foundation-level
+#### Foundation status
 
-- define and validate the invariant for policy object selection
-- decide whether entities remain repository-governed registry objects or become first-class lifecycle-managed objects
-- reconcile the OpenClaw writeback contract with the exact drift extraction semantics implemented today
-- decide whether free-text `edit` must semantically decompose into multi-intent plans without pre-structured follow-up payloads before v3 freeze
+The remaining foundation blockers identified in the previous checkpoint are now closed in code:
+
+- policy objects have explicit status and deterministic selection rules
+- entities are frozen for v3 as registry-governed objects with explicit cardinality expectations
+- drift ingest contract is aligned with the operations actually extracted today
+- structured `edit` answers can decompose into multi-intent plans through deterministic parsing
 
 #### Freeze / parity / evaluation
 

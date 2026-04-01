@@ -83,4 +83,74 @@ generated_by: cristalina-openclaw
       statement: "Prefer explicit architecture tradeoffs.",
     });
   });
+
+  it("extracts a revise proposal when one parsable statement is replaced by another", async () => {
+    store.writeYaml("entities/registry.yaml", {
+      items: [
+        {
+          id: "ent-owner",
+          kind: "owner",
+          name: "Owner",
+          status: "active",
+          privacy_scope: "owner_private",
+        },
+      ],
+    });
+
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-001",
+      kind: "preference",
+      statement: "Use concise replies.",
+      status: "ratified",
+      confidence: 0.9,
+      source_type: "human_reply",
+      source_ref: "q-1",
+      created_at: "2026-03-29T02:00:00Z",
+      last_confirmed_at: "2026-03-29T02:00:00Z",
+      confirmed_by: "owner",
+      evidence_count: 1,
+      privacy_scope: "owner_private",
+    });
+
+    const previous = `---
+generated_by: cristalina-openclaw
+---
+
+# USER
+
+## Preferences
+- Use concise replies.
+`;
+
+    const current = `---
+generated_by: cristalina-openclaw
+---
+
+# USER
+
+## Preferences
+- Prefer explicit architecture tradeoffs.
+`;
+
+    const result = await ingestProjectionDrift(store, {
+      path: "compiled/bootstrap/USER.md",
+      artifact_type: "bootstrap_user",
+      projection_id: "drv-2026-03-29-001",
+      audience: "owner_private",
+      projection_profile: "deep",
+      diff_summary: "manual edit",
+      previous_content: previous,
+      current_content: current,
+    });
+
+    expect(result.proposals).toHaveLength(1);
+    expect(result.proposals[0].operation).toBe("PROPOSE");
+
+    const snapshot = await store.read();
+    expect(snapshot.proposals[0].data.operation).toBe("revise");
+    expect(snapshot.proposals[0].data.target_ref).toMatchObject({ object_id: "fact-001" });
+    expect(snapshot.proposals[0].data.candidate_payload).toMatchObject({
+      statement: "Prefer explicit architecture tradeoffs.",
+    });
+  });
 });

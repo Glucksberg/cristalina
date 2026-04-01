@@ -1,6 +1,7 @@
 import type {
   AuthorityPolicyObject,
   AudiencePolicy,
+  PolicyStatus,
   MemoryObjectKind,
   PolicyObject,
   PrivacyScope,
@@ -20,11 +21,57 @@ import {
   type PromotionPolicy,
 } from "./runtime.js";
 
+function policyVersion(value: ParsedObject["data"]): number {
+  const metadata = typeof value.metadata === "object" && value.metadata !== null
+    ? value.metadata as Record<string, unknown>
+    : null;
+  return typeof metadata?.version === "number" ? metadata.version : 0;
+}
+
+function policyUpdatedAt(value: ParsedObject["data"]): string {
+  const metadata = typeof value.metadata === "object" && value.metadata !== null
+    ? value.metadata as Record<string, unknown>
+    : null;
+  return typeof metadata?.updated_at === "string" ? metadata.updated_at : "";
+}
+
+function policyStatus(value: ParsedObject["data"]): PolicyStatus {
+  return value.status === "draft" || value.status === "deprecated" ? value.status : "active";
+}
+
+function comparePolicyEntries(a: ParsedObject, b: ParsedObject): number {
+  const versionDelta = policyVersion(b.data) - policyVersion(a.data);
+  if (versionDelta !== 0) return versionDelta;
+
+  const updatedAtDelta = policyUpdatedAt(b.data).localeCompare(policyUpdatedAt(a.data));
+  if (updatedAtDelta !== 0) return updatedAtDelta;
+
+  const aId = typeof a.data.id === "string" ? a.data.id : "";
+  const bId = typeof b.data.id === "string" ? b.data.id : "";
+  return aId.localeCompare(bId);
+}
+
+function selectPolicyEntry<T extends PolicyObject["kind"]>(
+  store: ParsedStore,
+  kind: T,
+): ParsedObject | null {
+  const entries = store.policyObjects
+    .filter((entry) => entry.data.kind === kind)
+    .sort(comparePolicyEntries);
+  if (entries.length === 0) return null;
+
+  const active = entries.filter((entry) => policyStatus(entry.data) === "active");
+  if (active.length > 0) return active[0];
+
+  const nonDeprecated = entries.filter((entry) => policyStatus(entry.data) !== "deprecated");
+  return nonDeprecated[0] ?? entries[0];
+}
+
 function policyByKind<T extends PolicyObject["kind"]>(
   store: ParsedStore,
   kind: T,
 ): Extract<PolicyObject, { kind: T }> | null {
-  const obj = store.policyObjects.find((entry) => entry.data.kind === kind);
+  const obj = selectPolicyEntry(store, kind);
   return obj ? obj.data as Extract<PolicyObject, { kind: T }> : null;
 }
 
@@ -118,5 +165,5 @@ export function resolvePolicyBundle(store: ParsedStore): {
 }
 
 export function findEntityById(store: ParsedStore, entityId: string): ParsedObject | null {
-  return store.entities.find((entity) => entity.data.id === entityId) ?? null;
+  return store.entities.find((entity) => entity.data.id === entityId && entity.data.status === "active") ?? null;
 }

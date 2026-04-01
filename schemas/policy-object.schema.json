@@ -13,6 +13,14 @@
           "type": "string",
           "const": "audience_policy"
         },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "draft",
+            "deprecated"
+          ]
+        },
         "default_scope": {
           "type": "string",
           "enum": [
@@ -188,6 +196,7 @@
       "required": [
         "id",
         "kind",
+        "status",
         "default_scope",
         "policy_mode",
         "escalation_rule",
@@ -205,6 +214,14 @@
         "kind": {
           "type": "string",
           "const": "promotion_policy"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "draft",
+            "deprecated"
+          ]
         },
         "default_question_count": {
           "type": "integer",
@@ -265,6 +282,7 @@
       "required": [
         "id",
         "kind",
+        "status",
         "default_question_count",
         "max_question_count",
         "minimum_supporting_events"
@@ -281,6 +299,14 @@
         "kind": {
           "type": "string",
           "const": "authority_policy"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "draft",
+            "deprecated"
+          ]
         },
         "high_risk_kinds": {
           "type": "array",
@@ -346,7 +372,8 @@
       },
       "required": [
         "id",
-        "kind"
+        "kind",
+        "status"
       ],
       "additionalProperties": false
     },
@@ -360,6 +387,14 @@
         "kind": {
           "type": "string",
           "const": "projection_policy"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "draft",
+            "deprecated"
+          ]
         },
         "default_profiles": {
           "type": "object",
@@ -591,6 +626,7 @@
       "required": [
         "id",
         "kind",
+        "status",
         "default_profiles",
         "tier_limits"
       ],

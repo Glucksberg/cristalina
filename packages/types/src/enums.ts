@@ -208,6 +208,15 @@ export const PolicyKind = z.enum([
 ]);
 export type PolicyKind = z.infer<typeof PolicyKind>;
 
+// --- Policy Status ---
+
+export const PolicyStatus = z.enum([
+  "active",
+  "draft",
+  "deprecated",
+]);
+export type PolicyStatus = z.infer<typeof PolicyStatus>;
+
 // --- Derived Artifact Type (OPENCLAW-ADAPTER.md §9-11) ---
 
 export const DerivedArtifactType = z.enum([

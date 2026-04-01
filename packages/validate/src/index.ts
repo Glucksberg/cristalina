@@ -31,6 +31,8 @@ export {
   contradictionIntegrity,
   scopeEscalation,
   stableReferences,
+  policySelection,
+  entityGovernance,
   storeStructure,
 } from "./rules/index.js";
 
