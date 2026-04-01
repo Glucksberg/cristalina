@@ -1,9 +1,14 @@
 import { parseOpenClawCliArgs, syncOpenClawWorkspace, ingestOpenClawWorkspace } from "./workspace.js";
+import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
-const { command, values } = parseOpenClawCliArgs(process.argv.slice(2));
+export interface CliIo {
+  log: (message: string) => void;
+  error: (message: string) => void;
+}
 
-if (values.help || !command) {
-  console.log(`Usage: cristalina-openclaw <command> [options]
+export function openClawHelpText(): string {
+  return `Usage: cristalina-openclaw <command> [options]
 
 Commands:
   bootstrap        Compile Cristalina and sync OpenClaw bootstrap files into a workspace
@@ -22,11 +27,21 @@ Options:
 
 Examples:
   cristalina-openclaw bootstrap --store examples/sample-store/.cristalina --workspace examples/openclaw-run
-  cristalina-openclaw ingest --store examples/sample-store/.cristalina --workspace examples/openclaw-run --refresh`);
-  process.exit(command ? 0 : 1);
+  cristalina-openclaw ingest --store examples/sample-store/.cristalina --workspace examples/openclaw-run --refresh`;
 }
 
-try {
+export async function runOpenClawCli(
+  argv: string[],
+  io: CliIo = { log: console.log, error: console.error },
+): Promise<number> {
+  const { command, values } = parseOpenClawCliArgs(argv);
+
+  if (values.help || !command) {
+    io.log(openClawHelpText());
+    return command ? 0 : 1;
+  }
+
+  try {
   if (command === "bootstrap") {
     const result = await syncOpenClawWorkspace({
       storePath: values.store,
@@ -37,15 +52,15 @@ try {
     });
 
     if (values.json) {
-      console.log(JSON.stringify(result, null, 2));
+      io.log(JSON.stringify(result, null, 2));
     } else {
-      console.log(`OpenClaw bootstrap written to ${result.workspacePath}`);
-      console.log(`Projection: ${result.projectionId}`);
+      io.log(`OpenClaw bootstrap written to ${result.workspacePath}`);
+      io.log(`Projection: ${result.projectionId}`);
       for (const file of result.files) {
-        console.log(`- ${file.workspaceFile}`);
+        io.log(`- ${file.workspaceFile}`);
       }
     }
-    process.exit(0);
+    return 0;
   }
 
   if (command === "ingest") {
@@ -60,21 +75,30 @@ try {
     });
 
     if (values.json) {
-      console.log(JSON.stringify(result, null, 2));
+      io.log(JSON.stringify(result, null, 2));
     } else {
-      console.log(`OpenClaw ingest completed for ${result.workspacePath}`);
-      console.log(`Drift events: ${result.driftEvents}`);
-      console.log(`Proposals: ${result.proposals}`);
+      io.log(`OpenClaw ingest completed for ${result.workspacePath}`);
+      io.log(`Drift events: ${result.driftEvents}`);
+      io.log(`Proposals: ${result.proposals}`);
       for (const file of result.changedFiles) {
-        console.log(`- ${file}`);
+        io.log(`- ${file}`);
       }
     }
-    process.exit(0);
+    return 0;
   }
 
-  console.error(`Unknown command: ${command}`);
-  process.exit(1);
-} catch (error) {
-  console.error(`Error: ${(error as Error).message}`);
-  process.exit(2);
+  io.error(`Unknown command: ${command}`);
+  return 1;
+  } catch (error) {
+    io.error(`Error: ${(error as Error).message}`);
+    return 2;
+  }
+}
+
+const isDirectExecution = process.argv[1] !== undefined
+  && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectExecution) {
+  const exitCode = await runOpenClawCli(process.argv.slice(2));
+  process.exit(exitCode);
 }
