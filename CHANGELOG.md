@@ -17,6 +17,7 @@ The format is based on Keep a Changelog, adapted for a protocol-first repository
 - `@cristalina/openclaw` as a minimal runtime adapter package with `bootstrap` and `ingest` commands
 - `cristalina` as an installable top-level CLI that routes `validate` and `openclaw`
 - a root `pnpm onboard:openclaw` script for choosing and bootstrapping mapped OpenClaw workspaces
+- a Linux GitHub one-liner installer for bootstrapping Cristalina directly into an OpenClaw workspace
 
 ### Changed
 - rebased `ROADMAP.md` around architecture v2 convergence instead of a purely future-looking core plan

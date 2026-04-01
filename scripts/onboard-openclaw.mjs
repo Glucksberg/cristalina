@@ -15,6 +15,11 @@ function parseArgs(argv) {
   const values = {
     config: undefined,
     workspace: undefined,
+    workspacePath: undefined,
+    storePath: undefined,
+    audience: undefined,
+    channel: undefined,
+    profile: undefined,
     yes: false,
     skipBuild: false,
     help: false,
@@ -24,6 +29,11 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--config") values.config = argv[++i];
     else if (arg === "--workspace") values.workspace = argv[++i];
+    else if (arg === "--workspace-path") values.workspacePath = argv[++i];
+    else if (arg === "--store-path") values.storePath = argv[++i];
+    else if (arg === "--audience") values.audience = argv[++i];
+    else if (arg === "--channel") values.channel = argv[++i];
+    else if (arg === "--profile") values.profile = argv[++i];
     else if (arg === "--yes") values.yes = true;
     else if (arg === "--skip-build") values.skipBuild = true;
     else if (arg === "--help" || arg === "-h") values.help = true;
@@ -37,6 +47,7 @@ function helpText() {
 
 Usage:
   pnpm onboard:openclaw [--config <file>] [--workspace <name>] [--yes] [--skip-build]
+  pnpm onboard:openclaw --workspace-path <absolute-path> [--store-path <store>] [--audience <scope>] [--channel <name>] [--profile <profile>] [--yes] [--skip-build]
 
 What this script does:
   1. loads a mapped list of OpenClaw workspaces
@@ -45,11 +56,14 @@ What this script does:
   4. bootstraps Cristalina runtime projections into it
   5. writes a short onboarding guide inside the workspace
 
-Expected config:
+Expected config for mapped mode:
   config/openclaw-workspaces.local.json
 
 If that file does not exist, the script falls back to:
-  config/openclaw-workspaces.example.json`;
+  config/openclaw-workspaces.example.json
+
+Direct mode:
+  --workspace-path lets you target one OpenClaw workspace directly without any local config file.`;
 }
 
 function loadConfig(configPath) {
@@ -247,14 +261,31 @@ async function main() {
   console.log("Canonical memory remains in the Cristalina store; the OpenClaw workspace is derived and disposable.");
   console.log("");
 
-  const configPath = resolveConfigPath(args.config);
-  const config = loadConfig(configPath);
-  const selectedWorkspace = await chooseWorkspace(config, args.workspace);
-  const workspacePath = guardWorkspacePath(selectedWorkspace.path);
-  const storePath = resolve(
-    repoRoot,
-    typeof selectedWorkspace.storePath === "string" ? selectedWorkspace.storePath : config.defaultStorePath,
-  );
+  let workspacePath;
+  let storePath;
+  let audience;
+  let channel;
+  let profile;
+
+  if (args.workspacePath) {
+    workspacePath = guardWorkspacePath(args.workspacePath);
+    storePath = resolve(repoRoot, args.storePath ?? "examples/sample-store/.cristalina");
+    audience = args.audience ?? "owner_private";
+    channel = args.channel;
+    profile = args.profile;
+  } else {
+    const configPath = resolveConfigPath(args.config);
+    const config = loadConfig(configPath);
+    const selectedWorkspace = await chooseWorkspace(config, args.workspace);
+    workspacePath = guardWorkspacePath(selectedWorkspace.path);
+    storePath = resolve(
+      repoRoot,
+      typeof selectedWorkspace.storePath === "string" ? selectedWorkspace.storePath : config.defaultStorePath,
+    );
+    audience = selectedWorkspace.audience ?? "owner_private";
+    channel = selectedWorkspace.channel;
+    profile = selectedWorkspace.profile;
+  }
 
   const confirmed = await confirmWipe(workspacePath, args.yes);
   if (!confirmed) {
@@ -272,16 +303,16 @@ async function main() {
   bootstrapWorkspace(cliPath, {
     storePath,
     workspacePath,
-    audience: selectedWorkspace.audience ?? "owner_private",
-    channel: selectedWorkspace.channel,
-    profile: selectedWorkspace.profile,
+    audience,
+    channel,
+    profile,
   });
 
   writeOnboardingFile(workspacePath, {
     storePath,
-    audience: selectedWorkspace.audience ?? "owner_private",
-    channel: selectedWorkspace.channel,
-    profile: selectedWorkspace.profile,
+    audience,
+    channel,
+    profile,
   });
 
   console.log("");

@@ -148,6 +148,24 @@ The script:
 - bootstraps `SOUL.md`, `VALUE.md`, `USER.md`, and `MEMORY.md`
 - writes `CRISTALINA-ONBOARDING.md` into the target workspace
 
+## Linux One-Liner From GitHub
+
+For pre-npm testing on Linux, the repo also includes a direct GitHub installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<ref>/scripts/install-openclaw-from-github.sh | \
+  bash -s -- --repo <owner>/<repo> --ref <ref> --workspace-path /absolute/path/to/openclaw
+```
+
+What it does:
+- downloads the repo snapshot from GitHub
+- runs `pnpm install`
+- runs `pnpm build`
+- wipes the target OpenClaw workspace
+- bootstraps the Cristalina runtime projection into that workspace
+
+For now this is the cleanest "one command and install into my OpenClaw instance" path before npm publish.
+
 ## Near-Term Roadmap
 
 - keep docs, schemas, fixtures, and sample store in parity with the current codepath
