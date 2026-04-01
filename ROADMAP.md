@@ -2,7 +2,7 @@
 
 ## Status
 
-Cristalina is currently in the **v3 implementation hardening** phase.
+Cristalina is currently in the **v3 freeze review** phase.
 
 The repository is no longer only a protocol draft. It already contains working implementation surface in:
 
@@ -12,14 +12,14 @@ The repository is no longer only a protocol draft. It already contains working i
 
 The immediate goal is no longer to define the shape of the system in the abstract.
 
-The immediate goal is to finish converging the current implementation into a coherent end-to-end v3:
+The immediate goal is to freeze the current implementation into a coherent end-to-end v3:
 
 - event -> proposal -> ratification -> canonical apply
 - authority -> audience -> projection policy
 - canonical core -> compiler -> adapter writeback
 - docs -> schemas -> fixtures -> executable behavior
 
-`docs/ARCHITECTURE-V2.md` remains the convergence base, but the repository is now beyond pure v2 clarification work and into executable v3 hardening.
+`docs/ARCHITECTURE-V2.md` remains the convergence base, but the repository is now beyond pure v2 clarification work and into executable v3 freeze review.
 
 ---
 
@@ -49,6 +49,33 @@ The immediate goal is to finish converging the current implementation into a coh
 
 - docs still lag behind what the code already hardened in v3
 - the full system still needs a deliberate whole-architecture review before broader surface expansion
+
+### Checkpoint outcome
+
+The current v3 codepath already expresses the main protocol thesis end to end:
+
+- `event -> proposal -> ratification -> canonical apply -> projection -> drift -> re-ingest`
+
+What remains is no longer a wide field of architectural ambiguity. It is a narrower decision surface split into three buckets.
+
+#### Still foundation-level
+
+- define and validate the invariant for policy object selection
+- decide whether entities remain repository-governed registry objects or become first-class lifecycle-managed objects
+- reconcile the OpenClaw writeback contract with the exact drift extraction semantics implemented today
+- decide whether free-text `edit` must semantically decompose into multi-intent plans without pre-structured follow-up payloads before v3 freeze
+
+#### Freeze / parity / evaluation
+
+- merge v3 repository decisions back into `docs/SPEC.md` and `docs/DATA-MODEL.md`
+- strengthen parity fixtures and invalid fixtures around policy, entity, and drift cases
+- add whole-system evaluation artifacts for contradiction handling, curation quality, and projection usefulness
+
+#### Expansion surface, not v3 foundation
+
+- package `cristalina-openclaw` as a broader adapter surface
+- add CLI or runtime-specific UX around projection and drift ingest
+- define additional adapters beyond OpenClaw
 
 ---
 
