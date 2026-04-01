@@ -36,6 +36,7 @@ describe("validateManifest", () => {
           architecture_v2: "docs/ARCHITECTURE-V2.md",
           curation_protocol: "docs/CURATION-PROTOCOL.md",
           openclaw_adapter: "docs/adapters/OPENCLAW-ADAPTER.md",
+          constitutional_core: "docs/CONSTITUTIONAL-CORE.md",
         },
         schemas: {
           manifest: "schemas/manifest.schema.json",

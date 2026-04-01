@@ -29,6 +29,7 @@ export const ManifestSchema = z
       architecture_v2: z.string().min(1),
       curation_protocol: z.string().min(1),
       openclaw_adapter: z.string().min(1),
+      constitutional_core: z.string().min(1).optional(),
     }),
     schemas: z.object({
       manifest: z.string().min(1),

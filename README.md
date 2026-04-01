@@ -34,6 +34,7 @@ This repository provides:
 |   |-- DATA-MODEL.md
 |   |-- CURATION-PROTOCOL.md
 |   |-- ARCHITECTURE-V2.md
+|   |-- CONSTITUTIONAL-CORE.md
 |   `-- adapters/
 |       `-- OPENCLAW-ADAPTER.md
 |-- schemas/
@@ -73,8 +74,9 @@ Read in this order:
 1. `docs/SPEC.md`
 2. `docs/DATA-MODEL.md`
 3. `docs/ARCHITECTURE-V2.md`
-4. `docs/CURATION-PROTOCOL.md`
-5. `docs/adapters/OPENCLAW-ADAPTER.md`
+4. `docs/CONSTITUTIONAL-CORE.md`
+5. `docs/CURATION-PROTOCOL.md`
+6. `docs/adapters/OPENCLAW-ADAPTER.md`
 
 If older draft documents and the current repository implementation diverge, `docs/ARCHITECTURE-V2.md` is the active convergence layer for repository work.
 
@@ -104,6 +106,12 @@ The repository already implements:
 - run freeze and evaluation passes before adding more primitives
 - measure contradiction handling, curation quality, and projection usefulness
 - freeze the v3 baseline before expanding adapter surface or adding new protocol primitives
+
+## V4 Direction
+
+- add a constitutional layer above ordinary memory and policy
+- keep constitutional axioms present in prompt, runtime, and memory simultaneously
+- move human-protection invariants out of mutable policy and into a supra-canonical shell
 
 ## Governance Files
 

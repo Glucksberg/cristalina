@@ -41,6 +41,10 @@
         "openclaw_adapter": {
           "type": "string",
           "minLength": 1
+        },
+        "constitutional_core": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

@@ -79,6 +79,12 @@ The remaining foundation blockers identified in the previous checkpoint are now 
 - add CLI or runtime-specific UX around projection and drift ingest
 - define additional adapters beyond OpenClaw
 
+#### V4 constitutional direction
+
+- introduce a constitutional layer above policy and canonical memory
+- require constitutional presence in prompt, runtime gate, and persistent store
+- make human-protection invariants non-editable through ordinary proposal flow
+
 ---
 
 ## Phase 0 - Foundation Drafts
@@ -250,6 +256,30 @@ The remaining foundation blockers identified in the previous checkpoint are now 
 - local CLI agents
 - Python runtimes
 - TypeScript runtimes
+
+---
+
+## Phase 8 - Constitutional Core
+
+### Status
+- proposed as the primary v4 direction
+
+### Goals
+- define non-editable constitutional invariants for agent behavior
+- ensure those invariants survive runtime changes
+- separate constitutional force from ordinary memory and policy
+
+### Deliverables
+- constitutional charter model
+- runtime constitutional gate
+- constitutional audit events
+- constitutional bootstrap header for prompts and projections
+- non-ordinary storage domain for constitutional artifacts
+
+### Exit criteria
+- constitutional rules cannot be modified through standard proposal + ratification flow
+- sensitive operations can be blocked before ordinary planning
+- runtime prompts always carry constitutional context
 
 ---
 
