@@ -108,7 +108,6 @@ describe("cristalina CLI", () => {
   it("runs first-run onboarding and bootstraps a workspace", async () => {
     const { io, logs, errors } = createIo();
     const freshStorePath = resolve(root, "fresh-store", ".cristalina");
-    writeFileSync(resolve(workspacePath, "junk.txt"), "old", "utf-8");
 
     const code = await runCristalinaCli([
       "onboard",
@@ -127,7 +126,62 @@ describe("cristalina CLI", () => {
     expect(existsSync(resolve(freshStorePath, "manifest.yaml"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "SOUL.md"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "CRISTALINA-ONBOARDING.md"))).toBe(true);
-    expect(existsSync(resolve(workspacePath, "junk.txt"))).toBe(false);
+  });
+
+  it("refuses to wipe unmanaged workspace files during onboarding", async () => {
+    const { io, errors } = createIo();
+    const freshStorePath = resolve(root, "fresh-store", ".cristalina");
+    writeFileSync(resolve(workspacePath, "junk.txt"), "old", "utf-8");
+
+    const code = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--workspace", workspacePath,
+      "--display-name", "My Cristalina",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(code).toBe(2);
+    expect(errors[0]).toContain("Workspace contains unmanaged files or directories");
+    expect(existsSync(resolve(workspacePath, "junk.txt"))).toBe(true);
+  });
+
+  it("resets only managed workspace artifacts on repeated onboarding", async () => {
+    const { io, errors } = createIo();
+    const freshStorePath = resolve(root, "fresh-store", ".cristalina");
+
+    const firstCode = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--workspace", workspacePath,
+      "--display-name", "My Cristalina",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(firstCode).toBe(0);
+
+    writeFileSync(resolve(workspacePath, "SOUL.md"), "local override", "utf-8");
+
+    const secondCode = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--workspace", workspacePath,
+      "--display-name", "My Cristalina",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(secondCode).toBe(0);
+    expect(errors).toHaveLength(0);
+    expect(existsSync(resolve(workspacePath, "SOUL.md"))).toBe(true);
   });
 
   it("creates a starter store that validates cleanly", async () => {

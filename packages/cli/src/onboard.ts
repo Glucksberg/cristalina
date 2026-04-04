@@ -51,6 +51,14 @@ const VALID_AUDIENCES = [
 ] as const;
 
 const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
+const MANAGED_WORKSPACE_ENTRIES = new Set([
+  "SOUL.md",
+  "VALUE.md",
+  "USER.md",
+  "MEMORY.md",
+  "CRISTALINA-ONBOARDING.md",
+  ".openclaw",
+]);
 
 export function onboardHelpText(): string {
   return `Usage: cristalina onboard <command> [options]
@@ -72,7 +80,7 @@ Options:
   --launch-portal        Start the live portal after setup
   --portal-host <host>   Portal bind host (default: 127.0.0.1)
   --portal-port <port>   Portal bind port (default: 8787)
-  --yes                  Skip confirmations when a workspace needs to be wiped
+  --yes                  Skip confirmations when managed workspace artifacts need to be reset
   -h, --help             Show this help
 
 Examples:
@@ -522,11 +530,23 @@ async function prepareWorkspace(workspacePath: string, autoYes: boolean): Promis
   mkdirSync(resolvedWorkspace, { recursive: true });
 
   if (directoryHasEntries(resolvedWorkspace)) {
-    const confirmed = autoYes ? true : await confirmWipe(resolvedWorkspace);
-    if (!confirmed) {
-      throw new Error(`Workspace wipe cancelled: ${resolvedWorkspace}`);
+    const entries = readdirSync(resolvedWorkspace, { withFileTypes: true });
+    const managedEntries = entries.filter((entry) => MANAGED_WORKSPACE_ENTRIES.has(entry.name));
+    const unmanagedEntries = entries.filter((entry) => !MANAGED_WORKSPACE_ENTRIES.has(entry.name));
+
+    if (unmanagedEntries.length > 0) {
+      throw new Error(
+        `Workspace contains unmanaged files or directories (${unmanagedEntries.map((entry) => entry.name).join(", ")}). Use an empty or dedicated workspace path.`,
+      );
     }
-    for (const entry of readdirSync(resolvedWorkspace, { withFileTypes: true })) {
+
+    const confirmed = managedEntries.length === 0
+      ? true
+      : autoYes ? true : await confirmWipe(resolvedWorkspace, managedEntries.map((entry) => entry.name));
+    if (!confirmed) {
+      throw new Error(`Workspace reset cancelled: ${resolvedWorkspace}`);
+    }
+    for (const entry of managedEntries) {
       rmSync(resolve(resolvedWorkspace, entry.name), { recursive: true, force: true });
     }
   }
@@ -714,11 +734,13 @@ async function optionalPrompt(rl: ReturnType<typeof createInterface> | null, lab
   return answer.trim() || undefined;
 }
 
-async function confirmWipe(workspacePath: string): Promise<boolean> {
+async function confirmWipe(workspacePath: string, managedEntries: string[]): Promise<boolean> {
   const rl = createInterface({ input, output });
   try {
-    const answer = await rl.question(`Workspace ${workspacePath} will be wiped. Type WIPE to continue: `);
-    return answer === "WIPE";
+    const answer = await rl.question(
+      `Workspace ${workspacePath} will reset managed Cristalina/OpenClaw artifacts (${managedEntries.join(", ")}). Type RESET to continue: `,
+    );
+    return answer === "RESET";
   } finally {
     rl.close();
   }

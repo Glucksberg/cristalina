@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { resolve } from "node:path";
-import { mkdirSync, rmSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { CristalinaStore } from "../src/store/store.js";
@@ -136,5 +136,19 @@ describe("Snapshot and rollback", () => {
     await restoreSnapshot(root, manifest.id);
     snapshot = await store.refresh();
     expect(snapshot.coreObjects[0].data.statement).toBe("Original fact.");
+  });
+
+  it("removes files created after the snapshot during restore", async () => {
+    const manifest = await createSnapshot(root, "before extra file", store.clock);
+    const extraDir = resolve(root, "core", "ratified");
+    const extraPath = resolve(extraDir, "extra.yaml");
+
+    mkdirSync(extraDir, { recursive: true });
+    writeFileSync(extraPath, "items: []\n", "utf-8");
+    expect(existsSync(extraPath)).toBe(true);
+
+    await restoreSnapshot(root, manifest.id);
+
+    expect(existsSync(extraPath)).toBe(false);
   });
 });

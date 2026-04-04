@@ -3,6 +3,16 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { startPortalServer } from "./server.js";
 
+const VALID_AUDIENCES = [
+  "owner_private",
+  "agent_operational",
+  "project_private",
+  "shareable",
+  "public_safe",
+] as const;
+
+const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
+
 export interface CliIo {
   log: (message: string) => void;
   error: (message: string) => void;
@@ -66,13 +76,23 @@ export async function runPortalCli(
     return 1;
   }
 
+  if (!VALID_AUDIENCES.includes(values.audience as typeof VALID_AUDIENCES[number])) {
+    io.error(`Invalid audience: ${values.audience}. Valid audiences: ${VALID_AUDIENCES.join(", ")}`);
+    return 1;
+  }
+
+  if (!VALID_PROFILES.includes(values.profile as typeof VALID_PROFILES[number])) {
+    io.error(`Invalid profile: ${values.profile}. Valid profiles: ${VALID_PROFILES.join(", ")}`);
+    return 1;
+  }
+
   try {
     const portal = await startPortalServer({
       storePath: values.store,
       host: values.host,
       port,
-      audience: values.audience as "owner_private",
-      profile: values.profile as "deep",
+      audience: values.audience as typeof VALID_AUDIENCES[number],
+      profile: values.profile as typeof VALID_PROFILES[number],
     });
 
     io.log(`Cristalina portal live at ${portal.url}`);

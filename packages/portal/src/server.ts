@@ -6,6 +6,16 @@ import type { PrivacyScope, ProjectionProfile } from "@cristalina/types";
 import { buildPortalSnapshot, type PortalSnapshot } from "./snapshot.js";
 import { renderPortalHtml } from "./template.js";
 
+const VALID_AUDIENCES = [
+  "owner_private",
+  "agent_operational",
+  "project_private",
+  "shareable",
+  "public_safe",
+] as const;
+
+const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
+
 export interface PortalServerOptions {
   storePath: string;
   host?: string;
@@ -33,6 +43,7 @@ export async function startPortalServer(options: PortalServerOptions): Promise<P
   const storePath = resolve(options.storePath);
   const audience = options.audience ?? "owner_private";
   const profile = options.profile ?? "deep";
+  assertValidPortalOptions({ audience, profile });
   let currentSnapshot = await buildPortalSnapshot({ storePath, audience, profile });
   const html = renderPortalHtml();
   const clients = new Set<WebSocket>();
@@ -73,12 +84,31 @@ export async function startPortalServer(options: PortalServerOptions): Promise<P
     }
   });
 
-  await new Promise<void>((resolveStart, rejectStart) => {
-    server.once("error", rejectStart);
-    server.listen(port, host, () => {
-      server.off("error", rejectStart);
-      resolveStart();
+  try {
+    await new Promise<void>((resolveStart, rejectStart) => {
+      const rejectOnce = (error: Error) => {
+        server.off("error", rejectOnce);
+        websocketServer.off("error", rejectOnce);
+        rejectStart(error);
+      };
+      server.once("error", rejectOnce);
+      websocketServer.once("error", rejectOnce);
+      server.listen(port, host, () => {
+        server.off("error", rejectOnce);
+        websocketServer.off("error", rejectOnce);
+        resolveStart();
+      });
     });
+  } catch (error) {
+    await watcher.close();
+    for (const client of clients) client.terminate();
+    await new Promise<void>((resolveClose) => websocketServer.close(() => resolveClose()));
+    await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
+    throw error;
+  }
+
+  websocketServer.on("error", (error) => {
+    console.error(`[cristalina-portal] websocket error: ${error.message}`);
   });
 
   const address = server.address();
@@ -133,11 +163,18 @@ function handleHttpRequest(
   }
 
   if (request.url === "/healthz") {
-    response.writeHead(200, {
+    const ok = snapshot.health.status !== "error";
+    response.writeHead(ok ? 200 : 503, {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
     });
-    response.end(JSON.stringify({ ok: true }));
+    response.end(JSON.stringify({
+      ok,
+      status: snapshot.health.status,
+      errorCount: snapshot.health.errorCount,
+      warningCount: snapshot.health.warningCount,
+      infoCount: snapshot.health.infoCount,
+    }));
     return;
   }
 
@@ -211,4 +248,14 @@ async function createWatcher(
 
 function relativePath(root: string, target: string): string {
   return relative(root, target).replaceAll(sep, "/");
+}
+
+function assertValidPortalOptions(options: Pick<PortalServerOptions, "audience" | "profile">): void {
+  if (!VALID_AUDIENCES.includes(options.audience as typeof VALID_AUDIENCES[number])) {
+    throw new Error(`Invalid audience: ${options.audience}. Valid audiences: ${VALID_AUDIENCES.join(", ")}`);
+  }
+
+  if (!VALID_PROFILES.includes(options.profile as typeof VALID_PROFILES[number])) {
+    throw new Error(`Invalid profile: ${options.profile}. Valid profiles: ${VALID_PROFILES.join(", ")}`);
+  }
 }

@@ -91,6 +91,40 @@ describe("startPortalServer", () => {
       await portal.close();
     }
   });
+
+  it("reports unhealthy status from /healthz when snapshot validation has errors", async () => {
+    writeFileSync(resolve(storePath, "manifest.yaml"), "name: only\n", "utf-8");
+
+    const portal = await startPortalServer({
+      storePath,
+      host: "127.0.0.1",
+      port: 0,
+    });
+
+    try {
+      const response = await fetch(`${portal.url}/healthz`);
+      expect(response.status).toBe(503);
+      const payload = await response.json() as {
+        ok: boolean;
+        status: string;
+        errorCount: number;
+      };
+      expect(payload.ok).toBe(false);
+      expect(payload.status).toBe("error");
+      expect(payload.errorCount).toBeGreaterThan(0);
+    } finally {
+      await portal.close();
+    }
+  });
+
+  it("fails fast on invalid portal options", async () => {
+    await expect(startPortalServer({
+      storePath,
+      host: "127.0.0.1",
+      port: 0,
+      profile: "invalid_profile" as never,
+    })).rejects.toThrow("Invalid profile");
+  });
 });
 
 function nextSnapshot(socket: WebSocket): Promise<{ snapshot: PortalSnapshot; changedPaths: string[] }> {

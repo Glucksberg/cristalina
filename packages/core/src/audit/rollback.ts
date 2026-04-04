@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { resolve, dirname, relative, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { stringify as yamlStringify, parse as yamlParse } from "yaml";
@@ -89,6 +89,15 @@ export async function restoreSnapshot(
 
   const manifestContent = readFileSync(manifestPath, "utf-8");
   const manifest = yamlParse(manifestContent) as SnapshotManifest;
+  const expectedPaths = new Set(manifest.files.map((file) => file.path));
+
+  for (const dir of ["core", "proposals"]) {
+    for (const relPath of walkDir(resolve(root, dir), root)) {
+      if (!expectedPaths.has(relPath)) {
+        rmSync(resolve(root, relPath), { force: true });
+      }
+    }
+  }
 
   for (const file of manifest.files) {
     const srcPath = resolve(root, snapshotDir, file.path);
