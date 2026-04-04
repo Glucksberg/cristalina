@@ -6,6 +6,11 @@
 **Type:** Memory protocol for persistent AI agents  
 **Scope:** Runtime-agnostic, filesystem-first, human-governed long-term memory
 
+Implementation note:
+- this document defines the protocol, not every repository detail
+- `docs/ARCHITECTURE-V2.md` is the binding convergence layer for the current repository baseline
+- items explicitly marked `optional` or `future` below are not required for v3 repository parity
+
 ---
 
 ## 1. Purpose
@@ -124,8 +129,6 @@ The agent MAY write directly to:
 
 - `events/`
 - `proposals/`
-- `scratch/`
-- `reports/`
 
 ### 6.2 Restricted agent write
 The agent MUST NOT freely write to:
@@ -133,7 +136,6 @@ The agent MUST NOT freely write to:
 - `core/ratified/`
 - `core/values/`
 - `core/identity/`
-- `core/preferences/`
 - `entities/`
 - `policy/`
 
@@ -153,13 +155,11 @@ The system MUST preserve the user's meaning faithfully when applying a human-app
 
 ## 7. Storage Model
 
-Recommended layout:
+Current repository-aligned layout:
 
 ```text
 .cristalina/
-  protocol/
-    manifest.yaml
-    version.yaml
+  manifest.yaml
 
   events/
     YYYY-MM/
@@ -173,8 +173,8 @@ Recommended layout:
   core/
     ratified/
       facts.yaml
-      relationships.yaml
-      contradictions.yaml
+      relationships.yaml         # optional when relationship objects exist
+      contradictions.yaml        # optional when contradictions are recorded
     identity/
       soul.yaml
       style.yaml
@@ -215,14 +215,18 @@ Recommended layout:
         metadata/
 
   audits/
-    validation.log
-    changes.log
-    contradictions.yaml
+    changes.log                  # optional but recommended
+    validation.log               # optional and implementation-defined
 
   backups/
     snapshots/
-    signed/
 ```
+
+Optional or future surfaces:
+
+- `arcs.md` and `open_loops.md` under `core/narrative/`
+- signed backups under `backups/signed/`
+- alternative manifest locations such as `protocol/manifest.yaml` for migration compatibility
 
 ---
 
@@ -397,7 +401,7 @@ Identity defines role, self-presentation, durable traits, and relationship to th
 Style defines tone, verbosity, humor, formality, and response density.
 
 ### 13.4 Reflection
-Cristalina SHOULD maintain an identity reflection layer where the agent can ask whether its style drift is still desired.
+Cristalina MAY maintain an identity reflection layer where the agent can ask whether its style drift is still desired. This is future-facing and not part of the v3 repository baseline.
 
 ---
 
@@ -478,9 +482,12 @@ Conflicts in values, identity, privacy, and active projects SHOULD be treated as
 
 Narrative is a living projection, not the whole core.
 
-Typical files:
+Baseline file:
 
 - `story.md`
+
+Optional derived files:
+
 - `arcs.md`
 - `open_loops.md`
 
@@ -619,10 +626,11 @@ Future adapters MAY exist for:
 Implementations SHOULD adopt at minimum:
 
 - secrets outside the memory store
-- signed or verifiable backups
 - redaction before export
 - access logging
 - privacy-aware compilation
+
+Future hardening MAY add signed or verifiable backups.
 
 ---
 

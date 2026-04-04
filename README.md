@@ -74,14 +74,14 @@ Cristalina therefore enforces a governed write model:
 ## Start Here
 
 Read in this order:
-1. `docs/SPEC.md`
-2. `docs/DATA-MODEL.md`
-3. `docs/ARCHITECTURE-V2.md`
+1. `docs/ARCHITECTURE-V2.md`
+2. `docs/SPEC.md`
+3. `docs/DATA-MODEL.md`
 4. `docs/CONSTITUTIONAL-CORE.md`
 5. `docs/CURATION-PROTOCOL.md`
 6. `docs/adapters/OPENCLAW-ADAPTER.md`
 
-If older draft documents and the current repository implementation diverge, `docs/ARCHITECTURE-V2.md` is the active convergence layer for repository work.
+If older draft documents and the current repository implementation diverge, `docs/ARCHITECTURE-V2.md` is the active convergence layer for repository work. The spec and adapter docs also contain optional and future-facing sections; treat the v3 baseline described in this README and the convergence doc as authoritative for what ships today.
 
 ## Current v3 Baseline
 

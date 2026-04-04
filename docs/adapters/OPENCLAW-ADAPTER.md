@@ -4,6 +4,10 @@
 
 This document defines the reference adapter between Cristalina Core and OpenClaw.
 
+Implementation note:
+- this document mixes current baseline behavior with optional adapter extensions
+- unless explicitly marked `optional` or `future`, statements below describe the intended v3 baseline for this repository
+
 ---
 
 ## 1. Purpose
@@ -51,20 +55,20 @@ Cristalina OpenClaw MUST NOT:
 
 ## 4. Input Sources
 
-The adapter SHOULD read from:
+Current repository baseline:
 
-- `core/ratified/`
-- `core/values/`
-- `core/identity/`
-- `core/preferences/`
-- `core/narrative/`
-- `entities/`
-- `policy/`
-- `compiled/hot/`
-- `compiled/warm/`
+- canonical objects under `core/ratified/`, `core/values/`, and `core/identity/`
+- narrative context under `core/narrative/`
+- governed entity registry under `entities/`
+- active policy objects under `policy/`
+
+The current adapter compiles these sources into bootstrap files and a projection manifest.
+
+Optional or future inputs:
+
+- `compiled/hot/` and `compiled/warm/` as explicit adapter hints
 - recent `events/` when policy allows
-
-It MAY read from `proposals/` only for surfacing review context, not for treating them as truth.
+- `proposals/` for surfacing review context, never as truth
 
 ---
 
@@ -77,7 +81,7 @@ The adapter SHOULD generate, at minimum:
 - `USER.md`
 - `MEMORY.md`
 
-Depending on the OpenClaw setup, it MAY also generate:
+Optional future outputs:
 
 - `IDENTITY.md`
 - `STYLE.md`
@@ -211,10 +215,10 @@ Examples:
 
 The adapter SHOULD detect drift by:
 
-- checksums
-- generation timestamps
 - projection metadata
-- scheduled comparison
+- generated file comparison
+- generation timestamps
+- checksums or scheduled comparison in richer implementations
 
 Drift SHOULD produce:
 
@@ -317,11 +321,11 @@ The adapter SHOULD account for:
 - projection compilation failures
 - stale compiled artifacts
 
-When a failure occurs, the adapter SHOULD:
+When a failure occurs, the adapter SHOULD fail closed:
 
-- fall back to the last valid projection
 - log the error
 - avoid writing malformed startup files
+- preserve the last valid generated files unless an explicit refresh succeeds
 
 ---
 
@@ -345,10 +349,10 @@ Suggested mapping from Cristalina to OpenClaw-facing files:
 |---|---|
 | `core/identity/soul.yaml` | `SOUL.md` |
 | `core/values/values.yaml` | `VALUE.md` |
-| `core/preferences/communication.yaml` + relationship summary | `USER.md` |
-| `compiled/hot/session-pack.md` + selected ratified memory | `MEMORY.md` |
-| `core/identity/style.yaml` | optional `STYLE.md` |
-| `core/narrative/open_loops.md` | optional heartbeat/project projection |
+| ratified `preference` and relationship context | `USER.md` |
+| compiled runtime summary + selected ratified memory | `MEMORY.md` |
+| `core/identity/style.yaml` | optional future `STYLE.md` |
+| `core/narrative/open_loops.md` | optional future heartbeat/project projection |
 
 ---
 
