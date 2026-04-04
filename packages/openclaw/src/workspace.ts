@@ -39,6 +39,13 @@ export interface OpenClawIngestResult {
   driftEvents: number;
   proposals: number;
   changedFiles: string[];
+  diagnostics: OpenClawIngestDiagnostic[];
+}
+
+export interface OpenClawIngestDiagnostic {
+  file: string;
+  code: "drift_only";
+  message: string;
 }
 
 const OPENCLAW_BOOTSTRAP_FILES = [
@@ -50,6 +57,7 @@ const OPENCLAW_BOOTSTRAP_FILES = [
 
 const WORKSPACE_METADATA_DIR = ".openclaw";
 const WORKSPACE_MANIFEST_FILE = "cristalina-projection-manifest.yaml";
+const WORKSPACE_BASELINE_DIR = "baseline";
 
 function channelCompiledPath(channel: string, compiledPath: string): string {
   const relative = compiledPath.startsWith("compiled/") ? compiledPath.slice("compiled/".length) : compiledPath;
@@ -64,6 +72,10 @@ function metadataManifestPath(workspacePath: string): string {
   return resolve(workspacePath, WORKSPACE_METADATA_DIR, WORKSPACE_MANIFEST_FILE);
 }
 
+function workspaceBaselinePath(workspacePath: string, workspaceFile: string): string {
+  return resolve(workspacePath, WORKSPACE_METADATA_DIR, WORKSPACE_BASELINE_DIR, workspaceFile);
+}
+
 function ensureParentDir(path: string): void {
   mkdirSync(dirname(path), { recursive: true });
 }
@@ -72,14 +84,25 @@ function readYamlRecord(path: string): Record<string, unknown> {
   return yamlParse(readFileSync(path, "utf-8")) as Record<string, unknown>;
 }
 
-function parseProjectionMetadata(storePath: string, audience: string, channel?: string): {
-  projectionId: string;
-  projectionProfile: string;
-} {
-  const manifestPath = resolve(
+function storeManifestPath(storePath: string, channel?: string): string {
+  return resolve(
     storePath,
     compiledProjectionPath(channel, "compiled/metadata/projection-manifest.yaml"),
   );
+}
+
+function parseProjectionMetadata(
+  workspacePath: string,
+  storePath: string,
+  audience: string,
+  channel?: string,
+): {
+  projectionId: string;
+  projectionProfile: string;
+} {
+  const manifestPath = existsSync(metadataManifestPath(workspacePath))
+    ? metadataManifestPath(workspacePath)
+    : storeManifestPath(storePath, channel);
 
   if (!existsSync(manifestPath)) {
     throw new Error(`Projection manifest not found at ${manifestPath}. Run bootstrap first.`);
@@ -99,9 +122,36 @@ function parseProjectionMetadata(storePath: string, audience: string, channel?: 
   };
 }
 
+function assertNoUningestedWorkspaceDrift(workspacePath: string): void {
+  const drifted: string[] = [];
+
+  for (const [workspaceFile] of OPENCLAW_BOOTSTRAP_FILES) {
+    const workspaceFullPath = resolve(workspacePath, workspaceFile);
+    const baselineFullPath = workspaceBaselinePath(workspacePath, workspaceFile);
+    if (!existsSync(workspaceFullPath) || !existsSync(baselineFullPath)) continue;
+
+    if (readFileSync(workspaceFullPath, "utf-8") !== readFileSync(baselineFullPath, "utf-8")) {
+      drifted.push(workspaceFile);
+    }
+  }
+
+  if (drifted.length > 0) {
+    throw new Error(
+      `Workspace has un-ingested runtime drift in ${drifted.join(", ")}. Run ingest before bootstrap/sync.`,
+    );
+  }
+}
+
+function updateWorkspaceBaseline(workspacePath: string, workspaceFile: string, content: string): void {
+  const baselinePath = workspaceBaselinePath(workspacePath, workspaceFile);
+  ensureParentDir(baselinePath);
+  writeFileSync(baselinePath, content, "utf-8");
+}
+
 export async function syncOpenClawWorkspace(options: OpenClawSyncOptions): Promise<OpenClawSyncResult> {
   const storePath = resolve(options.storePath);
   const workspacePath = resolve(options.workspacePath);
+  assertNoUningestedWorkspaceDrift(workspacePath);
   const store = new CristalinaStore({ root: storePath });
   const compiled = await compile(store, {
     audience: options.audience,
@@ -115,8 +165,10 @@ export async function syncOpenClawWorkspace(options: OpenClawSyncOptions): Promi
   for (const [workspaceFile, compiledFile] of OPENCLAW_BOOTSTRAP_FILES) {
     const source = resolve(storePath, compiledProjectionPath(compiled.metadata.channel, compiledFile));
     const target = resolve(workspacePath, workspaceFile);
+    const content = readFileSync(source, "utf-8");
     ensureParentDir(target);
-    writeFileSync(target, readFileSync(source, "utf-8"), "utf-8");
+    writeFileSync(target, content, "utf-8");
+    updateWorkspaceBaseline(workspacePath, workspaceFile, content);
     synced.push({ workspaceFile, compiledPath: source });
   }
 
@@ -140,20 +192,24 @@ export async function ingestOpenClawWorkspace(options: OpenClawIngestOptions): P
   const storePath = resolve(options.storePath);
   const workspacePath = resolve(options.workspacePath);
   const store = new CristalinaStore({ root: storePath });
-  const metadata = parseProjectionMetadata(storePath, options.audience, options.channel);
+  const metadata = parseProjectionMetadata(workspacePath, storePath, options.audience, options.channel);
 
   let driftEvents = 0;
   let proposals = 0;
   const changedFiles: string[] = [];
+  const diagnostics: OpenClawIngestDiagnostic[] = [];
 
   for (const [workspaceFile, compiledFile, artifactType] of OPENCLAW_BOOTSTRAP_FILES) {
     const workspaceFullPath = resolve(workspacePath, workspaceFile);
     if (!existsSync(workspaceFullPath)) continue;
 
     const compiledFullPath = resolve(storePath, compiledProjectionPath(options.channel, compiledFile));
-    if (!existsSync(compiledFullPath)) continue;
+    const baselineFullPath = workspaceBaselinePath(workspacePath, workspaceFile);
+    if (!existsSync(baselineFullPath) && !existsSync(compiledFullPath)) continue;
 
-    const previous = readFileSync(compiledFullPath, "utf-8");
+    const previous = existsSync(baselineFullPath)
+      ? readFileSync(baselineFullPath, "utf-8")
+      : readFileSync(compiledFullPath, "utf-8");
     const current = readFileSync(workspaceFullPath, "utf-8");
     if (previous === current) continue;
 
@@ -173,6 +229,15 @@ export async function ingestOpenClawWorkspace(options: OpenClawIngestOptions): P
     driftEvents += 1;
     proposals += result.proposals.length;
     changedFiles.push(workspaceFile);
+    updateWorkspaceBaseline(workspacePath, workspaceFile, current);
+
+    if (result.proposals.length === 0) {
+      diagnostics.push({
+        file: workspaceFile,
+        code: "drift_only",
+        message: "Workspace edit was recorded as runtime drift evidence only; no machine-safe proposals were extracted.",
+      });
+    }
   }
 
   if (options.refreshAfterIngest && changedFiles.length > 0) {
@@ -192,6 +257,7 @@ export async function ingestOpenClawWorkspace(options: OpenClawIngestOptions): P
     driftEvents,
     proposals,
     changedFiles,
+    diagnostics,
   };
 }
 

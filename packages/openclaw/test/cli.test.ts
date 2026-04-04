@@ -109,4 +109,30 @@ describe("openclaw CLI", () => {
     expect(logs.some((line) => line.includes("Drift events: 1"))).toBe(true);
     expect(logs.some((line) => line.includes("Proposals: 1"))).toBe(true);
   });
+
+  it("reports drift-only diagnostics through the CLI contract", async () => {
+    await runOpenClawCli([
+      "bootstrap",
+      "--store", storePath,
+      "--workspace", workspacePath,
+    ], createIo().io);
+
+    const soulPath = resolve(workspacePath, "SOUL.md");
+    writeFileSync(
+      soulPath,
+      `${readFileSync(soulPath, "utf-8")}\n## Scratchpad\n- Not machine-safe.\n`,
+      "utf-8",
+    );
+
+    const { io, logs, errors } = createIo();
+    const code = await runOpenClawCli([
+      "ingest",
+      "--store", storePath,
+      "--workspace", workspacePath,
+    ], io);
+
+    expect(code).toBe(0);
+    expect(errors).toHaveLength(0);
+    expect(logs.some((line) => line.includes("SOUL.md: Workspace edit was recorded as runtime drift evidence only"))).toBe(true);
+  });
 });

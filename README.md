@@ -169,6 +169,11 @@ Typical loop:
 3. point OpenClaw at `SOUL.md`, `VALUE.md`, `USER.md`, and `MEMORY.md` in that workspace
 4. after runtime edits, run `pnpm openclaw ingest --store examples/sample-store/.cristalina --workspace <your-openclaw-workspace>`
 
+Current safety behavior:
+- bootstrap refuses to overwrite workspace files if they still contain un-ingested runtime drift
+- ingest compares against the workspace baseline captured at the last sync, not only against the current compiled store
+- drift-only edits are reported explicitly when no machine-safe proposals can be extracted
+
 This is intentionally v3-only: bootstrap plus projection sync plus governed drift ingest, without the constitutional v4 runtime layer.
 
 ## Installable CLI

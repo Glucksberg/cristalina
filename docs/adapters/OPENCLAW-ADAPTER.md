@@ -220,11 +220,18 @@ The adapter SHOULD detect drift by:
 - generation timestamps
 - checksums or scheduled comparison in richer implementations
 
+Current repository baseline adds one more guard:
+
+- the workspace keeps a local projection baseline from the last successful sync
+- ingest compares runtime edits against that workspace baseline
+- bootstrap refuses to overwrite the workspace when un-ingested drift is still present
+
 Drift SHOULD produce:
 
 - a warning
 - a runtime drift event
 - one or more governed proposals when the edited sections are machine-parsable
+- an explicit drift-only diagnostic when edits were observed but no machine-safe proposal could be extracted
 - or a projection refresh
 
 Drift MUST NOT silently become canonical.

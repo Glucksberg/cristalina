@@ -170,8 +170,22 @@ function parseEditSegment(
   const trimmed = raw.trim();
   if (trimmed.length === 0 || !fallbackScope) return null;
 
-  const match = trimmed.match(/^(?<kind>[a-z_]+)(?:\s*\[(?<scope>[a-z_]+)\])?\s*:\s*(?<statement>.+)$/);
-  if (!match?.groups) {
+  const taggedMatch = trimmed.match(/^\[(?<kind>[a-z_]+)\](?:\[(?<scope>[a-z_]+)\])?\s+(?<statement>.+)$/);
+  if (taggedMatch?.groups) {
+    const kind = isMemoryObjectKind(taggedMatch.groups.kind) ? taggedMatch.groups.kind : fallbackKind;
+    const scope = isPrivacyScope(taggedMatch.groups.scope) ? taggedMatch.groups.scope : fallbackScope;
+    const statement = taggedMatch.groups.statement.trim();
+    if (!statement.length) return null;
+
+    return {
+      kind,
+      privacy_scope: scope,
+      statement,
+    };
+  }
+
+  const namespacedMatch = trimmed.match(/^(?<kind>[a-z_]+)(?:\s*\[(?<scope>[a-z_]+)\])?\s*:\s*(?<statement>.+)$/);
+  if (!namespacedMatch?.groups) {
     return {
       kind: fallbackKind,
       privacy_scope: fallbackScope,
@@ -179,9 +193,9 @@ function parseEditSegment(
     };
   }
 
-  const kind = isMemoryObjectKind(match.groups.kind) ? match.groups.kind : fallbackKind;
-  const scope = isPrivacyScope(match.groups.scope) ? match.groups.scope : fallbackScope;
-  const statement = match.groups.statement.trim();
+  const kind = isMemoryObjectKind(namespacedMatch.groups.kind) ? namespacedMatch.groups.kind : fallbackKind;
+  const scope = isPrivacyScope(namespacedMatch.groups.scope) ? namespacedMatch.groups.scope : fallbackScope;
+  const statement = namespacedMatch.groups.statement.trim();
   if (!statement.length) return null;
 
   return {

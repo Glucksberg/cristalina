@@ -83,6 +83,9 @@ export async function runOpenClawCli(
       for (const file of result.changedFiles) {
         io.log(`- ${file}`);
       }
+      for (const diagnostic of result.diagnostics) {
+        io.log(`! ${diagnostic.file}: ${diagnostic.message}`);
+      }
     }
     return 0;
   }
