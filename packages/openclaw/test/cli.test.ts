@@ -135,4 +135,18 @@ describe("openclaw CLI", () => {
     expect(errors).toHaveLength(0);
     expect(logs.some((line) => line.includes("SOUL.md: Workspace edit was recorded as runtime drift evidence only"))).toBe(true);
   });
+
+  it("returns a friendly error for invalid projection profiles", async () => {
+    const { io, errors } = createIo();
+    const code = await runOpenClawCli([
+      "bootstrap",
+      "--store", storePath,
+      "--workspace", workspacePath,
+      "--profile", "invalid_profile",
+    ], io);
+
+    expect(code).toBe(2);
+    expect(errors[0]).toContain("Invalid profile: invalid_profile");
+    expect(errors[0]).toContain("tiny, standard, deep");
+  });
 });

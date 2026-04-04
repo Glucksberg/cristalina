@@ -88,4 +88,30 @@ questions:
 
     rmSync(dir, { recursive: true });
   });
+
+  it("only classifies the canonical contradictions file as contradictions", async () => {
+    const dir = tmpStore();
+    mkdirSync(resolve(dir, "core/ratified"), { recursive: true });
+    writeFileSync(resolve(dir, "core/ratified/contradictions.yaml"), `items:
+  - id: ctr-001
+    left: fact-001
+    right: fact-002
+    status: open
+    reason: Conflict
+`, "utf-8");
+    writeFileSync(resolve(dir, "core/ratified/contradiction-analysis-notes.yaml"), `items:
+  - id: fact-001
+    kind: fact
+    statement: Notes about contradictions should remain regular core data.
+    status: ratified
+    privacy_scope: owner_private
+`, "utf-8");
+
+    const store = await readStore(dir);
+    expect(store.contradictions).toHaveLength(1);
+    expect(store.coreObjects).toHaveLength(1);
+    expect(store.coreObjects[0].file).toBe("core/ratified/contradiction-analysis-notes.yaml");
+
+    rmSync(dir, { recursive: true });
+  });
 });

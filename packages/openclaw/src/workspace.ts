@@ -10,6 +10,16 @@ import {
   type CompilationOptions,
 } from "@cristalina/core";
 
+const VALID_AUDIENCES = [
+  "owner_private",
+  "agent_operational",
+  "project_private",
+  "shareable",
+  "public_safe",
+] as const;
+
+const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
+
 export interface OpenClawSyncOptions extends CompilationOptions {
   storePath: string;
   workspacePath: string;
@@ -59,6 +69,15 @@ const OPENCLAW_BOOTSTRAP_FILES = [
 const WORKSPACE_METADATA_DIR = ".openclaw";
 const WORKSPACE_MANIFEST_FILE = "cristalina-projection-manifest.yaml";
 const WORKSPACE_BASELINE_DIR = "baseline";
+
+function assertValidCompilationOptions(options: Pick<CompilationOptions, "audience" | "profile">): void {
+  if (!VALID_AUDIENCES.includes(options.audience as typeof VALID_AUDIENCES[number])) {
+    throw new Error(`Invalid audience: ${options.audience}. Valid audiences: ${VALID_AUDIENCES.join(", ")}`);
+  }
+  if (options.profile && !VALID_PROFILES.includes(options.profile as typeof VALID_PROFILES[number])) {
+    throw new Error(`Invalid profile: ${options.profile}. Valid profiles: ${VALID_PROFILES.join(", ")}`);
+  }
+}
 
 function channelCompiledPath(channel: string, compiledPath: string): string {
   const relative = compiledPath.startsWith("compiled/") ? compiledPath.slice("compiled/".length) : compiledPath;
@@ -110,30 +129,56 @@ function parseProjectionMetadata(
   }
 
   const manifest = readYamlRecord(manifestPath);
-  const manifestAudience = String(manifest.audience ?? "");
-  if (manifestAudience && manifestAudience !== audience) {
+  const manifestAudience = typeof manifest.audience === "string" ? manifest.audience : null;
+  if (!manifestAudience || !VALID_AUDIENCES.includes(manifestAudience as typeof VALID_AUDIENCES[number])) {
+    throw new Error(
+      `Projection manifest at ${manifestPath} is missing a valid audience. Re-run bootstrap before ingest.`,
+    );
+  }
+  if (manifestAudience !== audience) {
     throw new Error(
       `Projection manifest audience mismatch: expected ${audience}, found ${manifestAudience}. Re-run bootstrap with the same audience.`,
     );
   }
 
+  const projectionProfile = typeof manifest.projection_profile === "string" ? manifest.projection_profile : null;
+  if (!projectionProfile || !VALID_PROFILES.includes(projectionProfile as typeof VALID_PROFILES[number])) {
+    throw new Error(
+      `Projection manifest at ${manifestPath} is missing a valid projection_profile. Re-run bootstrap before ingest.`,
+    );
+  }
+
   return {
     projectionId: String(manifest.projection_id),
-    projectionProfile: String(manifest.projection_profile),
+    projectionProfile,
   };
 }
 
 function assertNoUningestedWorkspaceDrift(workspacePath: string): void {
   const drifted: string[] = [];
+  const unmanaged: string[] = [];
 
   for (const [workspaceFile] of OPENCLAW_BOOTSTRAP_FILES) {
     const workspaceFullPath = resolve(workspacePath, workspaceFile);
     const baselineFullPath = workspaceBaselinePath(workspacePath, workspaceFile);
-    if (!existsSync(workspaceFullPath) || !existsSync(baselineFullPath)) continue;
+    const hasWorkspaceFile = existsSync(workspaceFullPath);
+    const hasBaseline = existsSync(baselineFullPath);
+
+    if (hasWorkspaceFile && !hasBaseline) {
+      unmanaged.push(workspaceFile);
+      continue;
+    }
+    if (!hasWorkspaceFile || !hasBaseline) continue;
 
     if (readFileSync(workspaceFullPath, "utf-8") !== readFileSync(baselineFullPath, "utf-8")) {
       drifted.push(workspaceFile);
     }
+  }
+
+  if (unmanaged.length > 0) {
+    throw new Error(
+      `Workspace contains existing runtime files without a baseline in ${unmanaged.join(", ")}. Use an empty workspace or ingest after establishing a baseline.`,
+    );
   }
 
   if (drifted.length > 0) {
@@ -152,6 +197,7 @@ function updateWorkspaceBaseline(workspacePath: string, workspaceFile: string, c
 export async function syncOpenClawWorkspace(options: OpenClawSyncOptions): Promise<OpenClawSyncResult> {
   const storePath = resolve(options.storePath);
   const workspacePath = resolve(options.workspacePath);
+  assertValidCompilationOptions(options);
   assertNoUningestedWorkspaceDrift(workspacePath);
   const store = new CristalinaStore({ root: storePath });
   const compiled = await compile(store, {
@@ -192,6 +238,7 @@ export async function syncOpenClawWorkspace(options: OpenClawSyncOptions): Promi
 export async function ingestOpenClawWorkspace(options: OpenClawIngestOptions): Promise<OpenClawIngestResult> {
   const storePath = resolve(options.storePath);
   const workspacePath = resolve(options.workspacePath);
+  assertValidCompilationOptions(options);
   const store = new CristalinaStore({ root: storePath });
   const metadata = parseProjectionMetadata(workspacePath, storePath, options.audience, options.channel);
 

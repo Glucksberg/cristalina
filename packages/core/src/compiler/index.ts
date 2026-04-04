@@ -7,7 +7,7 @@ import { renderWarm } from "./warm.js";
 import { renderCold } from "./cold.js";
 import { generateBootstrap, type BootstrapFiles } from "./bootstrap.js";
 import { writeYamlFile, ensureDir } from "../store/writer.js";
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import {
   buildDerivedArtifact,
@@ -80,6 +80,10 @@ export async function compile(
   const hot = renderHot(hotObjects, visibleContradictions);
   const warm = renderWarm(warmObjects);
   const cold = renderCold(coldObjects);
+  const narrativeStoryPath = resolve(store.root, "core", "narrative", "story.md");
+  const narrativeStory = existsSync(narrativeStoryPath)
+    ? readFileSync(narrativeStoryPath, "utf-8")
+    : undefined;
   const bootstrap = generateBootstrap(
     snapshot.coreObjects,
     visibleContradictions,
@@ -88,6 +92,7 @@ export async function compile(
     {
       activeProject: options.activeProject,
       recentEvents: snapshot.events,
+      narrativeStory,
     },
   );
 

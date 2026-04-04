@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from "node:
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { runCristalinaCli, cristalinaHelpText } from "../src/runner.js";
+import { lintStore } from "@cristalina/validate";
 
 let root: string;
 let workspacePath: string;
@@ -127,6 +128,28 @@ describe("cristalina CLI", () => {
     expect(existsSync(resolve(workspacePath, "SOUL.md"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "CRISTALINA-ONBOARDING.md"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "junk.txt"))).toBe(false);
+  });
+
+  it("creates a starter store that validates cleanly", async () => {
+    const { io, errors } = createIo();
+    const freshStorePath = resolve(root, "starter-store", ".cristalina");
+
+    const code = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--display-name", "Starter Store",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(code).toBe(0);
+    expect(errors).toHaveLength(0);
+
+    const lint = await lintStore(freshStorePath);
+    expect(lint.errorCount).toBe(0);
+    expect(lint.warningCount).toBe(0);
   });
 
   it("returns a friendly error when the store path points to a file", async () => {

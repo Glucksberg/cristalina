@@ -1,11 +1,29 @@
+import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { ManifestSchema } from "@cristalina/types";
 import type { Diagnostic } from "../diagnostics.js";
 import { error, warning } from "../diagnostics.js";
 import type { ParsedStore } from "./reader.js";
 
 const RULE = "manifest";
+
+function resolveAppRepoRoot(): string | null {
+  let current = dirname(fileURLToPath(import.meta.url));
+  for (let depth = 0; depth < 8; depth += 1) {
+    const docsDir = resolve(current, "docs");
+    const schemasDir = resolve(current, "schemas");
+    if (existsSync(docsDir) && existsSync(schemasDir)) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+const APP_REPO_ROOT = resolveAppRepoRoot();
 
 /**
  * Validate the store manifest against the Manifest schema
@@ -42,6 +60,7 @@ export function validateManifest(store: ParsedStore): Diagnostic[] {
 
   for (const [key, docPath] of Object.entries(manifest.documents)) {
     const candidates = [
+      ...(APP_REPO_ROOT ? [resolve(APP_REPO_ROOT, docPath)] : []),
       resolve(repoRoot, docPath),
       resolve(grandParent, docPath),
       resolve(store.root, docPath),
@@ -60,6 +79,7 @@ export function validateManifest(store: ParsedStore): Diagnostic[] {
   // Check that referenced schema paths exist
   for (const [key, schemaPath] of Object.entries(manifest.schemas)) {
     const candidates = [
+      ...(APP_REPO_ROOT ? [resolve(APP_REPO_ROOT, schemaPath)] : []),
       resolve(repoRoot, schemaPath),
       resolve(grandParent, schemaPath),
       resolve(store.root, schemaPath),

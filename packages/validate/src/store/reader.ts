@@ -136,7 +136,7 @@ export async function readStore(storePath: string): Promise<ParsedStore> {
     if (data === null) continue;
 
     // Check if it's a contradiction file
-    const isContradiction = file.includes("contradiction");
+    const isContradiction = file === "core/ratified/contradictions.yaml";
 
     // Handle items arrays (e.g., facts.yaml with items: [...])
     if (data.items && Array.isArray(data.items)) {

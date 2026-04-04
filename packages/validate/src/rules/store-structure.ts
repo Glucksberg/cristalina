@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Diagnostic } from "../diagnostics.js";
 import { warning, info } from "../diagnostics.js";
 import type { ParsedStore } from "../store/reader.js";
@@ -49,7 +51,7 @@ export function storeStructure(store: ParsedStore): Diagnostic[] {
 
   // Check expected top-level directories
   for (const dir of EXPECTED_DIRS) {
-    if (!dirPrefixes.has(dir)) {
+    if (!existsSync(resolve(store.root, dir)) && !dirPrefixes.has(dir)) {
       diagnostics.push(
         warning(`${RULE}/missing-dir`, `Expected directory not found: ${dir}/`),
       );
@@ -58,7 +60,7 @@ export function storeStructure(store: ParsedStore): Diagnostic[] {
 
   // Check expected core subdirectories
   for (const dir of EXPECTED_CORE_DIRS) {
-    if (!dirPrefixes.has(dir)) {
+    if (!existsSync(resolve(store.root, dir)) && !dirPrefixes.has(dir)) {
       diagnostics.push(
         warning(`${RULE}/missing-core-dir`, `Expected core directory not found: ${dir}/`),
       );

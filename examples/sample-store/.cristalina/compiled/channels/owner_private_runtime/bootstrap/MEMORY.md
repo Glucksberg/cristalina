@@ -3,10 +3,10 @@ generated_by: cristalina-openclaw
 source: canonical_projection
 audience: owner_private
 channel: owner_private_runtime
-generated_at: 2026-03-29T12:00:00Z
-projection_id: drv-2026-03-29-001
+generated_at: 2026-04-04T11:33:52Z
+projection_id: drv-2026-04-04-001
 projection_profile: deep
-artifact_id: drv-2026-03-29-008
+artifact_id: drv-2026-04-04-008
 artifact_type: bootstrap_memory
 writeback_mode: proposal_extraction
 parsable: true
@@ -14,10 +14,9 @@ machine_extractable_sections:
   - active_projects
   - working_set
   - open_loops
-checksum: 41208e4f84e6ee976008dd5b2a9966e5c23a9cc24714d348a15a5cba08d474d8
+checksum: b0aa272b2c0317c0609fa611ac0be706bcb5abdebe4d9189efa3cac3df3291dc
 ---
 
 # MEMORY
 
-## Working Set
-- [constraint] Default privacy scope is owner_private. No automatic audience expansion is allowed.
+No active memory yet.

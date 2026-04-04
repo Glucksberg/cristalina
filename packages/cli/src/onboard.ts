@@ -5,6 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { syncOpenClawWorkspace } from "@cristalina/openclaw";
 import { startPortalServer } from "@cristalina/portal";
+import { lintStore } from "@cristalina/validate";
 import {
   runOnboardWizard,
   WizardCancelledError,
@@ -40,6 +41,16 @@ interface SetupOptions {
 interface NormalizedSetupInput extends WizardSeed {
   wizard: boolean;
 }
+
+const VALID_AUDIENCES = [
+  "owner_private",
+  "agent_operational",
+  "project_private",
+  "shareable",
+  "public_safe",
+] as const;
+
+const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
 
 export function onboardHelpText(): string {
   return `Usage: cristalina onboard <command> [options]
@@ -141,6 +152,18 @@ export async function runOnboardCli(
     } else {
       writeStoreOnboarding(options.storePath, options);
       steps.push("Wrote local onboarding guide into the store root");
+    }
+
+    const lint = await lintStore(options.storePath);
+    if (lint.errorCount > 0) {
+      throw new Error(
+        `Starter store failed validation with ${lint.errorCount} error(s). Run cristalina validate lint "${options.storePath}" for details.`,
+      );
+    }
+    if (lint.warningCount > 0) {
+      steps.push(`Validation completed with ${lint.warningCount} warning(s)`);
+    } else {
+      steps.push("Validation passed with no issues");
     }
 
     io.log("Cristalina onboarding completed.");
@@ -245,6 +268,7 @@ function ensureStore(options: SetupOptions): boolean {
   mkdirSync(resolve(options.storePath, "backups", "snapshots"), { recursive: true });
 
   const now = new Date().toISOString();
+  const onboardingSourceRef = `onboarding/${now}`;
   const ownerId = "ent-owner";
   const agentId = "ent-agent-cristalina";
 
@@ -259,6 +283,22 @@ license: Apache-2.0
 maintainers:
   - name: ${quote(options.ownerName)}
     role: owner
+documents:
+  spec: docs/SPEC.md
+  data_model: docs/DATA-MODEL.md
+  architecture_v2: docs/ARCHITECTURE-V2.md
+  curation_protocol: docs/CURATION-PROTOCOL.md
+  openclaw_adapter: docs/adapters/OPENCLAW-ADAPTER.md
+schemas:
+  manifest: schemas/manifest.schema.json
+  event: schemas/event.schema.json
+  proposal: schemas/proposal.schema.json
+  memory_object: schemas/memory-object.schema.json
+  entity: schemas/entity.schema.json
+  policy_object: schemas/policy-object.schema.json
+  derived_artifact: schemas/derived-artifact.schema.json
+  projection_manifest: schemas/projection-manifest.schema.json
+  adapter_writeback_contract: schemas/adapter-writeback-contract.schema.json
 `, "utf-8");
 
   writeFileSync(resolve(options.storePath, "entities", "registry.yaml"), `items:
@@ -382,7 +422,7 @@ metadata:
     status: ratified
     confidence: 0.9
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -397,7 +437,7 @@ metadata:
     status: ratified
     confidence: 0.88
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -412,7 +452,7 @@ metadata:
     status: ratified
     confidence: 0.95
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -424,7 +464,7 @@ metadata:
     status: ratified
     confidence: 0.86
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -440,7 +480,7 @@ metadata:
     status: ratified
     confidence: 0.95
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -452,7 +492,7 @@ metadata:
     status: ratified
     confidence: 0.95
     source_type: human_reply
-    source_ref: initial_onboarding
+    source_ref: ${quote(onboardingSourceRef)}
     created_at: ${quote(now)}
     last_confirmed_at: ${quote(now)}
     confirmed_by: owner
@@ -587,9 +627,9 @@ function normalizeSetupInput(values: ReturnType<typeof parseArgs>["values"]): No
   const ownerName = stringOption(values["owner-name"]);
   const agentName = stringOption(values["agent-name"]);
   const storeName = stringOption(values["store-name"]);
-  const audience = (stringOption(values.audience) ?? "owner_private") as AudienceOption;
+  const audienceRaw = stringOption(values.audience) ?? "owner_private";
   const channel = stringOption(values.channel) ?? "owner_private_runtime";
-  const profile = (stringOption(values.profile) ?? "deep") as ProfileOption;
+  const profileRaw = stringOption(values.profile) ?? "deep";
   const launchPortal = booleanOption(values["launch-portal"]);
   const portalHost = stringOption(values["portal-host"]) ?? "127.0.0.1";
   const portalPortRaw = stringOption(values["portal-port"]) ?? "8787";
@@ -599,6 +639,14 @@ function normalizeSetupInput(values: ReturnType<typeof parseArgs>["values"]): No
     throw new Error(`Invalid portal port: ${portalPortRaw}`);
   }
 
+  if (!VALID_AUDIENCES.includes(audienceRaw as AudienceOption)) {
+    throw new Error(`Invalid audience: ${audienceRaw}. Valid audiences: ${VALID_AUDIENCES.join(", ")}`);
+  }
+
+  if (!VALID_PROFILES.includes(profileRaw as ProfileOption)) {
+    throw new Error(`Invalid profile: ${profileRaw}. Valid profiles: ${VALID_PROFILES.join(", ")}`);
+  }
+
   return {
     storePath,
     workspacePath,
@@ -606,9 +654,9 @@ function normalizeSetupInput(values: ReturnType<typeof parseArgs>["values"]): No
     displayName,
     ownerName,
     agentName,
-    audience,
+    audience: audienceRaw as AudienceOption,
     channel,
-    profile,
+    profile: profileRaw as ProfileOption,
     yes: booleanOption(values.yes),
     wizard: booleanOption(values.wizard),
     launchPortal,

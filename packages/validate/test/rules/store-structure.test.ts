@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 import { storeStructure } from "../../src/rules/store-structure.js";
 import type { ParsedStore } from "../../src/store/reader.js";
 
-function makeStore(files: string[]): ParsedStore {
+function makeStore(files: string[], root: string = "/test"): ParsedStore {
   return {
-    root: "/test", manifest: null, manifestFile: null,
+    root, manifest: null, manifestFile: null,
     events: [], proposals: [], curationPackets: [], coreObjects: [], entities: [], policyObjects: [], contradictions: [],
     files, parseErrors: [],
   };
@@ -46,5 +49,22 @@ describe("storeStructure rule", () => {
     ]);
     const diags = storeStructure(store);
     expect(diags.some((d) => d.rule === "store-structure/event-naming")).toBe(true);
+  });
+
+  it("does not warn about expected directories when they exist but are empty", () => {
+    const root = mkdtempSync(resolve(tmpdir(), "cristalina-structure-"));
+    mkdirSync(resolve(root, "events"), { recursive: true });
+    mkdirSync(resolve(root, "proposals"), { recursive: true });
+    mkdirSync(resolve(root, "core", "ratified"), { recursive: true });
+    mkdirSync(resolve(root, "core", "identity"), { recursive: true });
+    mkdirSync(resolve(root, "core", "values"), { recursive: true });
+    mkdirSync(resolve(root, "entities"), { recursive: true });
+    mkdirSync(resolve(root, "policy"), { recursive: true });
+    mkdirSync(resolve(root, "compiled"), { recursive: true });
+
+    const diags = storeStructure(makeStore([], root));
+    expect(diags.filter((d) => d.severity === "warning")).toHaveLength(0);
+
+    rmSync(root, { recursive: true, force: true });
   });
 });

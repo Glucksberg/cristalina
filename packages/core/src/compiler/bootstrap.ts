@@ -14,6 +14,7 @@ type TaggedKind = "fact" | "constraint" | "belief" | "project" | "identity_trait
 interface BootstrapOptions {
   activeProject?: string;
   recentEvents?: ParsedObject[];
+  narrativeStory?: string;
 }
 
 /** Generate bootstrap projection files (SOUL.md, VALUE.md, USER.md, MEMORY.md) */
@@ -32,7 +33,7 @@ export function generateBootstrap(
   const recentEvents = options.recentEvents ?? [];
 
   return {
-    soul: renderSoul(active, contradictions, limits),
+    soul: renderSoul(active, contradictions, limits, options.narrativeStory),
     value: renderValue(active, limits),
     user: renderUser(active, limits),
     memory: renderMemory(active, contradictions, limits, options.activeProject, recentEvents),
@@ -54,6 +55,7 @@ function renderSoul(
   objects: ParsedObject[],
   contradictions: ParsedObject[],
   limits: ReturnType<typeof bootstrapLimits>,
+  narrativeStory?: string,
 ): string {
   const lines: string[] = ["# SOUL\n"];
 
@@ -74,11 +76,20 @@ function renderSoul(
     }
   }
 
+  const narrative = narrativeExcerpt(narrativeStory);
+  if (narrative.length > 0) {
+    lines.push("\n## Narrative");
+    for (const entry of narrative) {
+      lines.push(`- ${entry}`);
+    }
+  }
+
   lines.push("\n## Runtime Attention");
   lines.push("- Read compiled context selectively before acting.");
   lines.push("- Write runtime memory with clean semantics.");
   lines.push("- Do not confuse preference, fact, belief, constraint, and project.");
   lines.push("- Preserve human intent without flattening meaning.");
+  lines.push("- Treat Ingest Feedback as read-only system data; update machine-safe sections instead.");
 
   const openContradictions = contradictions.filter((c) => c.data.status === "open").length;
   if (openContradictions > 0) {
@@ -256,6 +267,15 @@ function renderMemory(
 
 function formatTaggedStatement(kind: TaggedKind, statement: string): string {
   return `[${kind}] ${statement}`;
+}
+
+function narrativeExcerpt(story: string | undefined): string[] {
+  if (!story) return [];
+  return story
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith("#"))
+    .slice(0, 2);
 }
 
 function compareProjectPriority(left: ParsedObject, right: ParsedObject, activeProject: string | undefined): number {

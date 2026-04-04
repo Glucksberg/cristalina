@@ -156,6 +156,7 @@ describe("generateBootstrap", () => {
     const result = generateBootstrap([], []);
     expect(result.soul).toContain("## Runtime Attention");
     expect(result.soul).toContain("Do not confuse preference, fact, belief, constraint, and project.");
+    expect(result.soul).toContain("Treat Ingest Feedback as read-only system data");
   });
 
   it("produces VALUE.md with values", () => {
@@ -164,6 +165,15 @@ describe("generateBootstrap", () => {
     ];
     const result = generateBootstrap(objects, []);
     expect(result.value).toContain("Honesty above all.");
+  });
+
+  it("projects narrative story into SOUL.md when present", () => {
+    const result = generateBootstrap([], [], "owner_private", "standard", {
+      narrativeStory: "# Story\n\nCristalina remembers through governed projection.\n\nIt should stay legible under pressure.\n",
+    });
+
+    expect(result.soul).toContain("## Narrative");
+    expect(result.soul).toContain("Cristalina remembers through governed projection.");
   });
 
   it("keeps beliefs in USER.md without silently migrating them into MEMORY.md", () => {

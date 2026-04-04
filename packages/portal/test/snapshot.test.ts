@@ -27,7 +27,9 @@ describe("buildPortalSnapshot", () => {
     expect(snapshot.runtimeMap.stages).toHaveLength(5);
     expect(snapshot.runtimeMap.reasoningHotspots.length).toBeGreaterThan(0);
     expect(snapshot.fileAtlas.some((card) => card.path === "core/identity/soul.yaml" && card.present)).toBe(true);
+    expect(snapshot.fileAtlas.some((card) => card.path === "core/narrative/story.md" && card.present)).toBe(true);
     expect(snapshot.projections.find((card) => card.id === "memory")?.excerpt.length).toBeGreaterThan(0);
+    expect(snapshot.projections.find((card) => card.id === "soul")?.excerpt.some((line) => line.includes("governed promotion"))).toBe(true);
     expect(snapshot.recent.events.length).toBeGreaterThan(0);
   });
 });

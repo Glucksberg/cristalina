@@ -3,10 +3,10 @@ generated_by: cristalina-openclaw
 source: canonical_projection
 audience: owner_private
 channel: owner_private_runtime
-generated_at: 2026-03-29T12:00:00Z
-projection_id: drv-2026-03-29-001
+generated_at: 2026-04-04T11:33:52Z
+projection_id: drv-2026-04-04-001
 projection_profile: deep
-artifact_id: drv-2026-03-29-003
+artifact_id: drv-2026-04-04-003
 artifact_type: compiled_warm
 writeback_mode: proposal_extraction
 parsable: false

@@ -208,6 +208,18 @@ const FILE_DEFINITIONS: readonly FileDefinition[] = [
     description: "Valores e prioridades que orientam escolhas do sistema.",
   },
   {
+    id: "narrative-story",
+    title: "core/narrative/story.md",
+    path: "core/narrative/story.md",
+    category: "canonical",
+    description: "Narrativa estável do store: a história curta que orienta a leitura do agente.",
+    computedExcerpts: ({ store }) => {
+      const storyPath = resolve(store.root, "core", "narrative", "story.md");
+      if (!existsSync(storyPath)) return [];
+      return markdownExcerpt(readFileSync(storyPath, "utf-8"));
+    },
+  },
+  {
     id: "events",
     title: "events/",
     path: "events/",
@@ -274,8 +286,13 @@ export async function buildPortalSnapshot(args: {
   const profile = args.profile ?? "deep";
   const store = await readStore(args.storePath);
   const lint = await lintStore(args.storePath);
+  const narrativeStoryPath = resolve(store.root, "core", "narrative", "story.md");
+  const narrativeStory = existsSync(narrativeStoryPath)
+    ? readFileSync(narrativeStoryPath, "utf-8")
+    : undefined;
   const bootstrap = generateBootstrap(store.coreObjects, store.contradictions, audience, profile, {
     recentEvents: store.events,
+    narrativeStory,
   });
   const byFile = groupByFile(store);
   const context: SnapshotContext = { store, byFile, bootstrap };

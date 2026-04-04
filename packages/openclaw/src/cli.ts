@@ -2,6 +2,31 @@ import { parseOpenClawCliArgs, syncOpenClawWorkspace, ingestOpenClawWorkspace } 
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
+const VALID_AUDIENCES = [
+  "owner_private",
+  "agent_operational",
+  "project_private",
+  "shareable",
+  "public_safe",
+] as const;
+
+const VALID_PROFILES = ["tiny", "standard", "deep"] as const;
+
+function parseAudience(raw: string): typeof VALID_AUDIENCES[number] {
+  if (VALID_AUDIENCES.includes(raw as typeof VALID_AUDIENCES[number])) {
+    return raw as typeof VALID_AUDIENCES[number];
+  }
+  throw new Error(`Invalid audience: ${raw}. Valid audiences: ${VALID_AUDIENCES.join(", ")}`);
+}
+
+function parseProfile(raw: string | undefined): typeof VALID_PROFILES[number] | undefined {
+  if (!raw) return undefined;
+  if (VALID_PROFILES.includes(raw as typeof VALID_PROFILES[number])) {
+    return raw as typeof VALID_PROFILES[number];
+  }
+  throw new Error(`Invalid profile: ${raw}. Valid profiles: ${VALID_PROFILES.join(", ")}`);
+}
+
 export interface CliIo {
   log: (message: string) => void;
   error: (message: string) => void;
@@ -46,9 +71,9 @@ export async function runOpenClawCli(
     const result = await syncOpenClawWorkspace({
       storePath: values.store,
       workspacePath: values.workspace,
-      audience: values.audience as "owner_private",
+      audience: parseAudience(values.audience),
       channel: values.channel,
-      profile: values.profile as "deep" | undefined,
+      profile: parseProfile(values.profile),
     });
 
     if (values.json) {
@@ -67,9 +92,9 @@ export async function runOpenClawCli(
     const result = await ingestOpenClawWorkspace({
       storePath: values.store,
       workspacePath: values.workspace,
-      audience: values.audience as "owner_private",
+      audience: parseAudience(values.audience),
       channel: values.channel,
-      profile: values.profile as "deep" | undefined,
+      profile: parseProfile(values.profile),
       actor: values.actor,
       refreshAfterIngest: values.refresh,
     });

@@ -94,6 +94,16 @@ describe("syncOpenClawWorkspace", () => {
       audience: "owner_private",
     })).rejects.toThrow("Workspace has un-ingested runtime drift");
   });
+
+  it("refuses to overwrite pre-existing runtime files that have no baseline yet", async () => {
+    writeFileSync(resolve(workspacePath, "SOUL.md"), "manual draft", "utf-8");
+
+    await expect(syncOpenClawWorkspace({
+      storePath,
+      workspacePath,
+      audience: "owner_private",
+    })).rejects.toThrow("without a baseline");
+  });
 });
 
 describe("ingestOpenClawWorkspace", () => {
@@ -260,5 +270,19 @@ describe("ingestOpenClawWorkspace", () => {
         : null;
       return details?.code === "drift_only" && details.file === "SOUL.md";
     })).toBe(true);
+  });
+
+  it("fails fast when the workspace manifest is missing a valid audience", async () => {
+    mkdirSync(resolve(workspacePath, ".openclaw"), { recursive: true });
+    writeFileSync(resolve(workspacePath, ".openclaw", "cristalina-projection-manifest.yaml"), `projection_id: proj-001
+projection_profile: deep
+`, "utf-8");
+    writeFileSync(resolve(workspacePath, "SOUL.md"), "manual", "utf-8");
+
+    await expect(ingestOpenClawWorkspace({
+      storePath,
+      workspacePath,
+      audience: "owner_private",
+    })).rejects.toThrow("missing a valid audience");
   });
 });
