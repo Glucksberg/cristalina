@@ -93,4 +93,39 @@ describe("cristalina CLI", () => {
     expect(logs.some((line) => line.includes("OpenClaw bootstrap written"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "SOUL.md"))).toBe(true);
   });
+
+  it("routes portal help commands", async () => {
+    const { io, logs, errors } = createIo();
+    const code = await runCristalinaCli(["portal", "--help"], io);
+
+    expect(code).toBe(0);
+    expect(errors).toHaveLength(0);
+    expect(logs[0]).toContain("cristalina-portal");
+    expect(logs[0]).toContain("serve");
+  });
+
+  it("runs first-run onboarding and bootstraps a workspace", async () => {
+    const { io, logs, errors } = createIo();
+    const freshStorePath = resolve(root, "fresh-store", ".cristalina");
+    writeFileSync(resolve(workspacePath, "junk.txt"), "old", "utf-8");
+
+    const code = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--workspace", workspacePath,
+      "--display-name", "My Cristalina",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(code).toBe(0);
+    expect(errors).toHaveLength(0);
+    expect(logs.some((line) => line.includes("Cristalina onboarding completed."))).toBe(true);
+    expect(existsSync(resolve(freshStorePath, "manifest.yaml"))).toBe(true);
+    expect(existsSync(resolve(workspacePath, "SOUL.md"))).toBe(true);
+    expect(existsSync(resolve(workspacePath, "CRISTALINA-ONBOARDING.md"))).toBe(true);
+    expect(existsSync(resolve(workspacePath, "junk.txt"))).toBe(false);
+  });
 });

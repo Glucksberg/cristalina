@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runOpenClawCli } from "@cristalina/openclaw";
+import { runPortalCli } from "@cristalina/portal";
+import { runOnboardCli } from "./onboard.js";
 import { runValidateCli } from "@cristalina/validate";
 
 export interface CliIo {
@@ -12,14 +14,18 @@ export function cristalinaHelpText(): string {
   return `Usage: cristalina <command> [subcommand] [options]
 
 Commands:
+  onboard setup [options]       First-run setup for a store, OpenClaw workspace, and portal
   validate lint <path>           Lint a .cristalina store
   openclaw bootstrap [options]   Compile and sync an OpenClaw workspace
   openclaw ingest [options]      Re-ingest OpenClaw drift into governed proposals
+  portal serve [options]         Run a live memory portal with WebSocket updates
 
 Examples:
+  cristalina onboard setup --store ./.cristalina --workspace /abs/openclaw --yes
   cristalina validate lint examples/sample-store/.cristalina
   cristalina openclaw bootstrap --store examples/sample-store/.cristalina --workspace ./runtime
-  cristalina openclaw ingest --store examples/sample-store/.cristalina --workspace ./runtime --refresh`;
+  cristalina openclaw ingest --store examples/sample-store/.cristalina --workspace ./runtime --refresh
+  cristalina portal serve --store examples/sample-store/.cristalina --port 8787`;
 }
 
 export async function runCristalinaCli(
@@ -37,8 +43,16 @@ export async function runCristalinaCli(
     return runValidateCli(argv.slice(1), io);
   }
 
+  if (command === "onboard") {
+    return runOnboardCli(argv.slice(1), io);
+  }
+
   if (command === "openclaw") {
     return runOpenClawCli(argv.slice(1), io);
+  }
+
+  if (command === "portal") {
+    return runPortalCli(argv.slice(1), io);
   }
 
   io.error(`Unknown command: ${command}`);

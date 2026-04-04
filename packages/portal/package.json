@@ -1,7 +1,7 @@
 {
-  "name": "cristalina",
+  "name": "@cristalina/portal",
   "version": "0.1.0",
-  "description": "Installable CLI surface for Cristalina",
+  "description": "Live operator portal for Cristalina stores",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "cristalina": "./dist/cli.js"
+    "cristalina-portal": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -23,20 +23,17 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@cristalina/portal": "workspace:*",
-    "@cristalina/openclaw": "workspace:*",
-    "@cristalina/validate": "workspace:*"
+    "@cristalina/core": "workspace:*",
+    "@cristalina/types": "workspace:*",
+    "@cristalina/validate": "workspace:*",
+    "chokidar": "^4.0.3",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/ws": "^8.18.1",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

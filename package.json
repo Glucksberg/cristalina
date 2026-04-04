@@ -2,12 +2,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "pretest": "pnpm build",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "generate-schemas": "pnpm --filter @cristalina/types generate-schemas",
     "openclaw": "node packages/openclaw/dist/cli.js",
+    "portal": "node packages/portal/dist/cli.js",
     "cli": "node packages/cli/dist/cli.js",
+    "onboard:setup": "node packages/cli/dist/cli.js onboard setup",
     "onboard:openclaw": "node scripts/onboard-openclaw.mjs"
   },
   "engines": {

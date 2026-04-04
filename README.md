@@ -49,6 +49,7 @@ This repository provides:
 |   |-- types/
 |   |-- validate/
 |   |-- core/
+|   |-- portal/
 |   `-- openclaw/
 `-- examples/
     `-- sample-store/
@@ -101,7 +102,51 @@ The repository already implements:
 - channel-profiled runtime projection
 - OpenClaw writeback contract metadata
 - governed drift -> proposal extraction for machine-parsable projection edits
+- a live operator portal that explains the store and streams updates over WebSocket
 - a minimal `cristalina-openclaw` bootstrap and ingest CLI over the v3 contracts
+
+## Live Portal
+
+Cristalina now includes `@cristalina/portal`, a read-only operator surface for inspecting a store in real time.
+
+It is useful when you want:
+- a quick visual map of the main files that define the memory
+- live SOUL/VALUE/USER/MEMORY previews generated from the current canonical store
+- validation status, recent events, proposals, and core objects in one place
+- WebSocket-driven updates while the store changes under active runtime work
+
+Run it locally with:
+
+```bash
+pnpm portal serve --store examples/sample-store/.cristalina --port 8787
+```
+
+Or through the installable CLI surface:
+
+```bash
+pnpm cli -- portal serve --store examples/sample-store/.cristalina --port 8787
+```
+
+## First-Run Onboarding
+
+The repo now exposes a first-run onboarding flow through the main CLI:
+
+```bash
+pnpm onboard:setup -- --store ./.cristalina --workspace /absolute/path/to/openclaw --yes
+```
+
+Or directly:
+
+```bash
+pnpm cli -- onboard setup --store ./.cristalina --workspace /absolute/path/to/openclaw --yes
+```
+
+What it does:
+- initializes a starter `.cristalina` store if the target path is still empty
+- preserves an existing store instead of overwriting canonical data
+- bootstraps an OpenClaw workspace if you pass `--workspace`
+- writes onboarding guidance into the store or workspace
+- can launch the live portal with `--launch-portal`
 
 ## Run OpenClaw Against v3
 
@@ -121,9 +166,11 @@ The installable surface is now the `cristalina` package.
 
 Intended usage after publish:
 1. `npm install -g cristalina`
-2. `cristalina validate lint <path-to-store>`
-3. `cristalina openclaw bootstrap --store <path-to-store> --workspace <path-to-workspace>`
-4. `cristalina openclaw ingest --store <path-to-store> --workspace <path-to-workspace>`
+2. `cristalina onboard setup --store <path-to-store> --workspace <path-to-workspace> --yes`
+3. `cristalina validate lint <path-to-store>`
+4. `cristalina openclaw bootstrap --store <path-to-store> --workspace <path-to-workspace>`
+5. `cristalina openclaw ingest --store <path-to-store> --workspace <path-to-workspace>`
+6. `cristalina portal serve --store <path-to-store> --port 8787`
 
 Equivalent ephemeral usage:
 - `npx cristalina validate lint <path>`
