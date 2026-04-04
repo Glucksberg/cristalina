@@ -14,10 +14,10 @@ machine_extractable_sections:
   - active_projects
   - working_set
   - open_loops
-checksum: f33de46b520b895e486c57ae87dd28f4b0b55bb14d3077cd3d83f9a0b0eb39b6
+checksum: 41208e4f84e6ee976008dd5b2a9966e5c23a9cc24714d348a15a5cba08d474d8
 ---
 
 # MEMORY
 
 ## Working Set
-- Default privacy scope is owner_private. No automatic audience expansion is allowed.
+- [constraint] Default privacy scope is owner_private. No automatic audience expansion is allowed.

@@ -63,6 +63,12 @@ function renderSoul(objects: ParsedObject[], limits: ReturnType<typeof bootstrap
     }
   }
 
+  lines.push("\n## Runtime Attention");
+  lines.push("- Read compiled context selectively before acting.");
+  lines.push("- Write runtime memory with clean semantics.");
+  lines.push("- Do not confuse preference, fact, belief, constraint, and project.");
+  lines.push("- Preserve human intent without flattening meaning.");
+
   return lines.join("\n") + "\n";
 }
 

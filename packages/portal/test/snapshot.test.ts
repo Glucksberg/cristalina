@@ -24,6 +24,8 @@ describe("buildPortalSnapshot", () => {
 
     expect(snapshot.manifest.displayName).toBe("Cristalina Sample Store");
     expect(snapshot.health.errorCount).toBe(0);
+    expect(snapshot.runtimeMap.stages).toHaveLength(5);
+    expect(snapshot.runtimeMap.reasoningHotspots.length).toBeGreaterThan(0);
     expect(snapshot.fileAtlas.some((card) => card.path === "core/identity/soul.yaml" && card.present)).toBe(true);
     expect(snapshot.projections.find((card) => card.id === "memory")?.excerpt.length).toBeGreaterThan(0);
     expect(snapshot.recent.events.length).toBeGreaterThan(0);

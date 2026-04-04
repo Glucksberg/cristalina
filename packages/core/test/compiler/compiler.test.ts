@@ -131,6 +131,12 @@ describe("generateBootstrap", () => {
     expect(result.soul).toContain("Technical companion.");
   });
 
+  it("embeds runtime attention guidance in SOUL.md", () => {
+    const result = generateBootstrap([], []);
+    expect(result.soul).toContain("## Runtime Attention");
+    expect(result.soul).toContain("Do not confuse preference, fact, belief, constraint, and project.");
+  });
+
   it("produces VALUE.md with values", () => {
     const objects: ParsedObject[] = [
       { data: { id: "val-001", kind: "value", statement: "Honesty above all.", status: "ratified", privacy_scope: "owner_private" }, file: "test" },

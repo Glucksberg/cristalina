@@ -89,10 +89,39 @@ export function renderPortalHtml(): string {
         line-height: 1.55;
       }
 
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .hero-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 252, 246, 0.88);
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 700;
+        box-shadow: 0 10px 28px rgba(37, 48, 37, 0.08);
+      }
+
+      .hero-link.primary {
+        background: linear-gradient(135deg, rgba(20, 99, 86, 0.95), rgba(27, 123, 108, 0.88));
+        color: #f6fffb;
+      }
+
       .meta-row,
       .domain-grid,
       .dual-grid,
-      .activity-grid {
+      .activity-grid,
+      .reasoning-grid {
         display: grid;
         gap: 16px;
       }
@@ -105,6 +134,9 @@ export function renderPortalHtml(): string {
       .meta-pill,
       .panel,
       .flow-card,
+      .process-card,
+      .reasoning-card,
+      .summary-card,
       .projection-card,
       .activity-card {
         border: 1px solid var(--line);
@@ -196,6 +228,77 @@ export function renderPortalHtml(): string {
         margin: 0;
         color: var(--muted);
         line-height: 1.45;
+      }
+
+      .summary-card {
+        padding: 18px 20px;
+        background: linear-gradient(135deg, rgba(20, 99, 86, 0.12), rgba(255, 248, 238, 0.92));
+        margin-bottom: 16px;
+      }
+
+      .summary-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+      }
+
+      .summary-card p {
+        margin: 0;
+        line-height: 1.55;
+      }
+
+      .process-strip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+
+      .process-card,
+      .reasoning-card {
+        padding: 18px;
+      }
+
+      .process-card header,
+      .reasoning-card header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .process-index {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      .process-card p,
+      .reasoning-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .process-card ul,
+      .reasoning-card ul {
+        margin-top: 10px;
+      }
+
+      .reasoning-grid {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        margin-top: 16px;
       }
 
       .dual-grid {
@@ -337,6 +440,10 @@ export function renderPortalHtml(): string {
         <div class="eyebrow">Cristalina Live Portal</div>
         <h1 id="title">Loading store…</h1>
         <p class="hero-copy" id="subtitle">Inspecting canonical memory, policies, projections, and live drift.</p>
+        <div class="hero-actions">
+          <a class="hero-link primary" href="#runtimeMap">View Runtime Process Map</a>
+          <a class="hero-link" href="#projectionRuntime">Jump to Runtime Projection</a>
+        </div>
         <div class="meta-row">
           <div class="meta-pill">
             <strong>Health</strong>
@@ -365,7 +472,20 @@ export function renderPortalHtml(): string {
         <div class="domain-grid" id="domains"></div>
       </section>
 
-      <section class="section dual-grid">
+      <section class="section" id="runtimeMap">
+        <div class="section-head">
+          <h2>Runtime Process Map</h2>
+          <p>The whole path from raw observation to governed memory, plus the areas that require the most model judgment.</p>
+        </div>
+        <article class="summary-card">
+          <strong>Runtime Attention</strong>
+          <p id="runtimeSummary">Loading runtime attention guidance…</p>
+        </article>
+        <div class="process-strip" id="processMap"></div>
+        <div class="reasoning-grid" id="reasoningMap"></div>
+      </section>
+
+      <section class="section dual-grid" id="projectionRuntime">
         <div class="panel">
           <div class="section-head">
             <h2>File Atlas</h2>
@@ -428,6 +548,9 @@ export function renderPortalHtml(): string {
         activity: document.getElementById("activity"),
         diagnostics: document.getElementById("diagnostics"),
         liveFeed: document.getElementById("liveFeed"),
+        runtimeSummary: document.getElementById("runtimeSummary"),
+        processMap: document.getElementById("processMap"),
+        reasoningMap: document.getElementById("reasoningMap"),
       };
 
       function escapeHtml(value) {
@@ -462,12 +585,39 @@ export function renderPortalHtml(): string {
         dom.health.textContent = healthLabel(snapshot.health) + " (" + snapshot.health.errorCount + "/" + snapshot.health.warningCount + "/" + snapshot.health.infoCount + ")";
         dom.protocol.textContent = snapshot.manifest.protocolVersion + " • " + snapshot.manifest.repositoryVersion;
         dom.projection.textContent = snapshot.audience + " • " + snapshot.profile;
+        dom.runtimeSummary.textContent = snapshot.runtimeMap.summary;
 
         dom.domains.innerHTML = snapshot.domains.map((domain) => \`
           <article class="flow-card">
             <strong>\${escapeHtml(domain.title)}</strong>
             <div class="count">\${escapeHtml(domain.count)}</div>
             <p>\${escapeHtml(domain.description)}</p>
+          </article>
+        \`).join("");
+
+        dom.processMap.innerHTML = snapshot.runtimeMap.stages.map((stage, index) => \`
+          <article class="process-card">
+            <header>
+              <div>
+                <h3>\${escapeHtml(stage.title)}</h3>
+              </div>
+              <span class="process-index">\${escapeHtml(index + 1)}</span>
+            </header>
+            <p>\${escapeHtml(stage.summary)}</p>
+            \${renderList(stage.details)}
+          </article>
+        \`).join("");
+
+        dom.reasoningMap.innerHTML = snapshot.runtimeMap.reasoningHotspots.map((hotspot) => \`
+          <article class="reasoning-card">
+            <header>
+              <div>
+                <h3>\${escapeHtml(hotspot.title)}</h3>
+              </div>
+              <span class="chip warn">Model judgment</span>
+            </header>
+            <p>\${escapeHtml(hotspot.summary)}</p>
+            <ul><li>\${escapeHtml(hotspot.whyItMatters)}</li></ul>
           </article>
         \`).join("");
 

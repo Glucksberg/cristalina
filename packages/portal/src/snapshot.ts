@@ -54,6 +54,20 @@ export interface PortalDomainCard {
   description: string;
 }
 
+export interface PortalProcessStage {
+  id: string;
+  title: string;
+  summary: string;
+  details: string[];
+}
+
+export interface PortalReasoningHotspot {
+  id: string;
+  title: string;
+  summary: string;
+  whyItMatters: string;
+}
+
 export interface PortalSnapshot {
   generatedAt: string;
   storePath: string;
@@ -83,6 +97,11 @@ export interface PortalSnapshot {
     files: number;
   };
   domains: PortalDomainCard[];
+  runtimeMap: {
+    summary: string;
+    stages: PortalProcessStage[];
+    reasoningHotspots: PortalReasoningHotspot[];
+  };
   fileAtlas: PortalFileCard[];
   projections: PortalProjectionCard[];
   recent: {
@@ -325,6 +344,82 @@ export async function buildPortalSnapshot(args: {
         description: "Arquivos derivados para runtime.",
       },
     ],
+    runtimeMap: {
+      summary: "O runtime funciona melhor quando lê bem, escreve com semântica limpa, não confunde tipos de memória e preserva a intenção humana sem achatar significado.",
+      stages: [
+        {
+          id: "events",
+          title: "Events",
+          summary: "Observação bruta entra primeiro como evidência, não como verdade.",
+          details: [
+            "Interações, atividade e sinais viram LOG append-only.",
+            "Eventos baratos; memória canônica continua cara.",
+          ],
+        },
+        {
+          id: "compile",
+          title: "Compile",
+          summary: "O core governado é projetado em contexto operacional.",
+          details: [
+            "Compiler gera HOT/WARM/COLD.",
+            "Também gera SOUL, VALUE, USER e MEMORY.",
+          ],
+        },
+        {
+          id: "runtime",
+          title: "Runtime",
+          summary: "O agente lê projeções e age sobre elas em tempo real.",
+          details: [
+            "SOUL e VALUE ancoram postura e prioridades.",
+            "USER e MEMORY organizam modelo do usuário e working set.",
+          ],
+        },
+        {
+          id: "drift",
+          title: "Drift Ingest",
+          summary: "Se o runtime editar projeções, a mudança vira drift antes de virar memória.",
+          details: [
+            "Seções machine-safe extraem propostas.",
+            "Semântica fora do contrato fica como evidência.",
+          ],
+        },
+        {
+          id: "ratify",
+          title: "Ratify",
+          summary: "Curadoria humana transforma proposta em operação canônica auditável.",
+          details: [
+            "Normalize -> plan -> apply.",
+            "O core atualizado volta ao compiler e fecha o loop.",
+          ],
+        },
+      ],
+      reasoningHotspots: [
+        {
+          id: "context-selection",
+          title: "Selecionar contexto útil",
+          summary: "O modelo precisa decidir o que importa agora.",
+          whyItMatters: "Excesso de contexto ruim degrada foco; contexto ignorado demais deforma a resposta.",
+        },
+        {
+          id: "semantic-writing",
+          title: "Escrever com semântica limpa",
+          summary: "O runtime precisa escrever USER e MEMORY com disciplina.",
+          whyItMatters: "Quanto mais limpa a escrita, melhor o writeback preserva a memória em vez de gerar drift ambíguo.",
+        },
+        {
+          id: "kind-preservation",
+          title: "Preservar o tipo de pensamento",
+          summary: "Não misturar preference, fact, belief, constraint e project.",
+          whyItMatters: "Quando os tipos se confundem, o round-trip perde fidelidade e a governança ratifica o objeto errado.",
+        },
+        {
+          id: "human-intent",
+          title: "Interpretar intenção humana",
+          summary: "Curadoria livre ainda exige julgamento fino do modelo.",
+          whyItMatters: "Editar ou aceitar sem nuance achata significado e empobrece o plano de ratificação.",
+        },
+      ],
+    },
     fileAtlas: FILE_DEFINITIONS.map((definition) => buildFileCard(definition, context)),
     projections: [
       buildProjectionCard("soul", "SOUL.md", "Identidade e traços estáveis do agente.", bootstrap.soul),

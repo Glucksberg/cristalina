@@ -68,7 +68,7 @@ artifacts:
     writeback_mode: proposal_extraction
     parsable: true
     channel: owner_private_runtime
-    checksum: 98a427550ec17869c35062f4e6911b94afcfea35fe045753990d3beaa485644c
+    checksum: 67259076e43a1198c69e3cd3e9226173651fb7a89dc03b8207ad525f358f7fd5
     machine_extractable_sections: &a2
       - identity
       - style
@@ -101,7 +101,7 @@ artifacts:
     writeback_mode: proposal_extraction
     parsable: true
     channel: owner_private_runtime
-    checksum: ad38b003ab79f93e30fb2af3ce35210294b9d3324dd85414724fc402d08addc2
+    checksum: e8ee8ba28a7efb04ee2f74d5f837a7fe12baee789f5a076066a97a94011c85fc
     machine_extractable_sections: &a4
       - interaction_preferences
       - user_model
@@ -118,7 +118,7 @@ artifacts:
     writeback_mode: proposal_extraction
     parsable: true
     channel: owner_private_runtime
-    checksum: f33de46b520b895e486c57ae87dd28f4b0b55bb14d3077cd3d83f9a0b0eb39b6
+    checksum: 41208e4f84e6ee976008dd5b2a9966e5c23a9cc24714d348a15a5cba08d474d8
     machine_extractable_sections: &a5
       - active_projects
       - working_set

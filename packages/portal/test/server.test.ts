@@ -27,6 +27,10 @@ describe("startPortalServer", () => {
     });
 
     try {
+      const page = await fetch(`${portal.url}/`);
+      expect(page.ok).toBe(true);
+      expect(await page.text()).toContain("Runtime Process Map");
+
       const response = await fetch(`${portal.url}/api/snapshot`);
       expect(response.ok).toBe(true);
       const snapshot = await response.json() as PortalSnapshot;

@@ -5,7 +5,9 @@ export {
   type PortalDomainCard,
   type PortalFileCard,
   type PortalItem,
+  type PortalProcessStage,
   type PortalProjectionCard,
+  type PortalReasoningHotspot,
 } from "./snapshot.js";
 export {
   startPortalServer,

@@ -13,7 +13,7 @@ parsable: true
 machine_extractable_sections:
   - interaction_preferences
   - user_model
-checksum: ad38b003ab79f93e30fb2af3ce35210294b9d3324dd85414724fc402d08addc2
+checksum: e8ee8ba28a7efb04ee2f74d5f837a7fe12baee789f5a076066a97a94011c85fc
 ---
 
 # USER
@@ -23,4 +23,4 @@ checksum: ad38b003ab79f93e30fb2af3ce35210294b9d3324dd85414724fc402d08addc2
 - Default to concise operational mode; expand when the owner signals architectural depth.
 
 ## User Model
-- Default privacy scope is owner_private. No automatic audience expansion is allowed.
+- [constraint] Default privacy scope is owner_private. No automatic audience expansion is allowed.
