@@ -127,6 +127,8 @@ export const ProposalType = z.enum([
   "new_fact",
   "revise_fact",
   "revise_preference",
+  "new_project",
+  "revise_project",
   "new_value",
   "revise_value",
   "identity_adjustment",

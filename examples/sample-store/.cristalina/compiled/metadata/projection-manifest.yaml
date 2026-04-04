@@ -101,10 +101,10 @@ artifacts:
     writeback_mode: proposal_extraction
     parsable: true
     channel: owner_private_runtime
-    checksum: fbb5f1fb276fbfdaf02b17253278796d4b7656142747b797301b9c078f4e361a
+    checksum: ad38b003ab79f93e30fb2af3ce35210294b9d3324dd85414724fc402d08addc2
     machine_extractable_sections: &a4
-      - preferences
-      - known_facts
+      - interaction_preferences
+      - user_model
   - id: drv-2026-03-29-008
     artifact_type: bootstrap_memory
     created_at: 2026-03-29T12:00:00Z
@@ -118,9 +118,10 @@ artifacts:
     writeback_mode: proposal_extraction
     parsable: true
     channel: owner_private_runtime
-    checksum: 71f32fde5e84d95fcc2da20972561f0c6dfd5c2d240622aabe80cedc4f8f5d8e
+    checksum: f33de46b520b895e486c57ae87dd28f4b0b55bb14d3077cd3d83f9a0b0eb39b6
     machine_extractable_sections: &a5
-      - active_memory
+      - active_projects
+      - working_set
       - open_loops
 contract:
   adapter: cristalina-openclaw

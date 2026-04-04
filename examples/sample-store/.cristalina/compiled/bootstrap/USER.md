@@ -11,16 +11,16 @@ artifact_type: bootstrap_user
 writeback_mode: proposal_extraction
 parsable: true
 machine_extractable_sections:
-  - preferences
-  - known_facts
-checksum: fbb5f1fb276fbfdaf02b17253278796d4b7656142747b797301b9c078f4e361a
+  - interaction_preferences
+  - user_model
+checksum: ad38b003ab79f93e30fb2af3ce35210294b9d3324dd85414724fc402d08addc2
 ---
 
 # USER
 
-## Preferences
+## Interaction Preferences
 - User prefers concise operational answers unless asking for deep architecture work.
 - Default to concise operational mode; expand when the owner signals architectural depth.
 
-## Known Facts
+## User Model
 - Default privacy scope is owner_private. No automatic audience expansion is allowed.

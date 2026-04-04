@@ -381,6 +381,27 @@ For v3 freeze, the repository contract is explicit:
 - machine-parsable drift currently extracts `create`, `confirm`, `revise`, and `deprecate`
 - unsupported semantics must remain drift evidence until a safe extractor exists
 
+### 10.4 Projection files need distinct cognitive roles
+
+Bootstrap files must not become interchangeable buckets.
+
+For repository baseline work:
+
+- `SOUL.md` owns identity and style
+- `VALUE.md` owns values and priorities
+- `USER.md` owns interaction preferences plus user model
+- `MEMORY.md` owns active projects, working set, and open loops
+
+This matters because extraction quality depends on section semantics being stable enough to classify.
+
+For mixed semantic sections such as `User Model` and `Working Set`, repository baseline also permits typed runtime bullets like:
+
+- `[fact] ...`
+- `[constraint] ...`
+- `[belief] ...`
+
+This is a repository-level round-trip fidelity rule: the runtime may write compact markdown, but the ingest path should preserve the kind of thought when the section contract makes that distinction machine-safe.
+
 ---
 
 ## 11. Repository Consequences

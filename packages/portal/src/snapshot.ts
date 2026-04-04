@@ -233,7 +233,7 @@ const FILE_DEFINITIONS: readonly FileDefinition[] = [
     title: "USER.md",
     path: "compiled/bootstrap/USER.md",
     category: "projection",
-    description: "Projeção viva do contexto de usuário e preferências operacionais.",
+    description: "Projeção viva do modelo do usuário e das preferências de interação do runtime.",
     computedExcerpts: ({ bootstrap }) => markdownExcerpt(bootstrap.user),
   },
   {
@@ -241,7 +241,7 @@ const FILE_DEFINITIONS: readonly FileDefinition[] = [
     title: "MEMORY.md",
     path: "compiled/bootstrap/MEMORY.md",
     category: "projection",
-    description: "Projeção viva do que está quente o bastante para entrar no contexto do runtime.",
+    description: "Projeção viva do working set, dos projetos ativos e dos loops abertos do runtime.",
     computedExcerpts: ({ bootstrap }) => markdownExcerpt(bootstrap.memory),
   },
 ];

@@ -11,18 +11,13 @@ artifact_type: bootstrap_memory
 writeback_mode: proposal_extraction
 parsable: true
 machine_extractable_sections:
-  - active_memory
+  - active_projects
+  - working_set
   - open_loops
-checksum: 71f32fde5e84d95fcc2da20972561f0c6dfd5c2d240622aabe80cedc4f8f5d8e
+checksum: f33de46b520b895e486c57ae87dd28f4b0b55bb14d3077cd3d83f9a0b0eb39b6
 ---
 
 # MEMORY
 
-## Active Memory
+## Working Set
 - Default privacy scope is owner_private. No automatic audience expansion is allowed.
-- Honesty above pleasing.
-- Privacy above convenience.
-- User prefers concise operational answers unless asking for deep architecture work.
-- The agent acts as the owner's long-term technical companion.
-- Keep operational replies concise by default; expand for architecture work or explicit depth requests.
-- Default to concise operational mode; expand when the owner signals architectural depth.

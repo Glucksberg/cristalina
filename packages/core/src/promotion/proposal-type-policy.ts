@@ -26,6 +26,16 @@ const PROPOSAL_TYPE_POLICIES: Record<ProposalTypeType, ProposalTypePolicy> = {
     allowedOperations: ["confirm", "revise", "supersede", "deprecate"],
     questionClass: "kind-sensitive",
   },
+  new_project: {
+    allowedOperations: ["create"],
+    questionClass: "kind-sensitive",
+    allowedKinds: ["project"],
+  },
+  revise_project: {
+    allowedOperations: ["confirm", "revise", "supersede", "deprecate"],
+    questionClass: "kind-sensitive",
+    allowedKinds: ["project"],
+  },
   new_value: {
     allowedOperations: ["create"],
     questionClass: "value_arbitration",
