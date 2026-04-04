@@ -23,6 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@clack/prompts": "^1.1.0",
     "@cristalina/portal": "workspace:*",
     "@cristalina/openclaw": "workspace:*",
     "@cristalina/validate": "workspace:*"

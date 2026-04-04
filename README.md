@@ -132,21 +132,29 @@ pnpm cli -- portal serve --store examples/sample-store/.cristalina --port 8787
 The repo now exposes a first-run onboarding flow through the main CLI:
 
 ```bash
-pnpm onboard:setup -- --store ./.cristalina --workspace /absolute/path/to/openclaw --yes
+pnpm onboard:setup
 ```
 
 Or directly:
 
 ```bash
-pnpm cli -- onboard setup --store ./.cristalina --workspace /absolute/path/to/openclaw --yes
+pnpm cli -- onboard setup
 ```
 
 What it does:
+- launches a menu-driven wizard in interactive terminals
 - initializes a starter `.cristalina` store if the target path is still empty
 - preserves an existing store instead of overwriting canonical data
 - bootstraps an OpenClaw workspace if you pass `--workspace`
 - writes onboarding guidance into the store or workspace
 - can launch the live portal with `--launch-portal`
+
+If you want to seed the wizard or skip it entirely, flags still work:
+
+```bash
+pnpm onboard:setup -- --wizard --store ./.cristalina
+pnpm onboard:setup -- --store ./.cristalina --workspace /absolute/path/to/openclaw --yes
+```
 
 ## Run OpenClaw Against v3
 

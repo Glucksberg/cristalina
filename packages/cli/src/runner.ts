@@ -14,13 +14,15 @@ export function cristalinaHelpText(): string {
   return `Usage: cristalina <command> [subcommand] [options]
 
 Commands:
-  onboard setup [options]       First-run setup for a store, OpenClaw workspace, and portal
+  onboard setup [options]       First-run setup; launches an interactive wizard by default
   validate lint <path>           Lint a .cristalina store
   openclaw bootstrap [options]   Compile and sync an OpenClaw workspace
   openclaw ingest [options]      Re-ingest OpenClaw drift into governed proposals
   portal serve [options]         Run a live memory portal with WebSocket updates
 
 Examples:
+  cristalina onboard setup
+  cristalina onboard setup --wizard --store ./.cristalina
   cristalina onboard setup --store ./.cristalina --workspace /abs/openclaw --yes
   cristalina validate lint examples/sample-store/.cristalina
   cristalina openclaw bootstrap --store examples/sample-store/.cristalina --workspace ./runtime
