@@ -251,5 +251,14 @@ describe("ingestOpenClawWorkspace", () => {
         message: "Workspace edit was recorded as runtime drift evidence only; no machine-safe proposals were extracted.",
       },
     ]);
+
+    const snapshot = await new CristalinaStore({ root: storePath }).read();
+    expect(snapshot.events.some((event) => {
+      if (event.data.kind !== "runtime_drift") return false;
+      const details = typeof event.data.details === "object" && event.data.details !== null
+        ? event.data.details as Record<string, unknown>
+        : null;
+      return details?.code === "drift_only" && details.file === "SOUL.md";
+    })).toBe(true);
   });
 });

@@ -5,6 +5,7 @@ import { parse as yamlParse } from "yaml";
 import {
   CristalinaStore,
   compile,
+  executeOperation,
   ingestProjectionDrift,
   type CompilationOptions,
 } from "@cristalina/core";
@@ -236,6 +237,21 @@ export async function ingestOpenClawWorkspace(options: OpenClawIngestOptions): P
         file: workspaceFile,
         code: "drift_only",
         message: "Workspace edit was recorded as runtime drift evidence only; no machine-safe proposals were extracted.",
+      });
+      await executeOperation(store, {
+        op: "LOG",
+        kind: "runtime_drift",
+        summary: `Workspace edit in ${workspaceFile} remained drift-only.`,
+        source_type: "runtime_observation",
+        privacy_scope: options.audience,
+        actor: options.actor ?? "openclaw-runtime",
+        tags: ["runtime_drift", "drift_only", `file:${workspaceFile}`],
+        details: {
+          code: "drift_only",
+          file: workspaceFile,
+          message: "Workspace edit was recorded as runtime drift evidence only; no machine-safe proposals were extracted.",
+          projection_id: metadata.projectionId,
+        },
       });
     }
   }

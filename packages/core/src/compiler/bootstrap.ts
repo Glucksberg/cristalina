@@ -9,7 +9,12 @@ export interface BootstrapFiles {
   memory: string;
 }
 
-type TaggedKind = "fact" | "constraint" | "belief" | "project";
+type TaggedKind = "fact" | "constraint" | "belief" | "project" | "identity_trait" | "style_rule";
+
+interface BootstrapOptions {
+  activeProject?: string;
+  recentEvents?: ParsedObject[];
+}
 
 /** Generate bootstrap projection files (SOUL.md, VALUE.md, USER.md, MEMORY.md) */
 export function generateBootstrap(
@@ -17,18 +22,20 @@ export function generateBootstrap(
   contradictions: ParsedObject[],
   audience: PrivacyScope = "owner_private",
   profile: ProjectionProfile = "standard",
+  options: BootstrapOptions = {},
 ): BootstrapFiles {
   const filtered = filterByAudience(coreObjects, audience);
   const active = filtered.filter((o) =>
     o.data.status === "ratified" || o.data.status === "crystallized",
   );
   const limits = bootstrapLimits(profile);
+  const recentEvents = options.recentEvents ?? [];
 
   return {
-    soul: renderSoul(active, limits),
+    soul: renderSoul(active, contradictions, limits),
     value: renderValue(active, limits),
     user: renderUser(active, limits),
-    memory: renderMemory(active, contradictions, limits),
+    memory: renderMemory(active, contradictions, limits, options.activeProject, recentEvents),
   };
 }
 
@@ -43,13 +50,17 @@ function bootstrapLimits(profile: ProjectionProfile) {
   }
 }
 
-function renderSoul(objects: ParsedObject[], limits: ReturnType<typeof bootstrapLimits>): string {
+function renderSoul(
+  objects: ParsedObject[],
+  contradictions: ParsedObject[],
+  limits: ReturnType<typeof bootstrapLimits>,
+): string {
   const lines: string[] = ["# SOUL\n"];
 
   const traits = objects.filter((o) => o.data.kind === "identity_trait").slice(0, limits.traits);
   if (traits.length > 0) {
     for (const obj of traits) {
-      lines.push(`- ${obj.data.statement}`);
+      lines.push(`- ${formatTaggedStatement("identity_trait", obj.data.statement as string)}`);
     }
   } else {
     lines.push("You are a practical personal agent with governed long-term memory.");
@@ -59,7 +70,7 @@ function renderSoul(objects: ParsedObject[], limits: ReturnType<typeof bootstrap
   if (style.length > 0) {
     lines.push("\n## Style");
     for (const obj of style) {
-      lines.push(`- ${obj.data.statement}`);
+      lines.push(`- ${formatTaggedStatement("style_rule", obj.data.statement as string)}`);
     }
   }
 
@@ -68,6 +79,16 @@ function renderSoul(objects: ParsedObject[], limits: ReturnType<typeof bootstrap
   lines.push("- Write runtime memory with clean semantics.");
   lines.push("- Do not confuse preference, fact, belief, constraint, and project.");
   lines.push("- Preserve human intent without flattening meaning.");
+
+  const openContradictions = contradictions.filter((c) => c.data.status === "open").length;
+  if (openContradictions > 0) {
+    lines.push(`- You have ${openContradictions} open contradiction${openContradictions === 1 ? "" : "s"}; avoid speaking with false certainty where the store is contested.`);
+  }
+
+  const beliefCount = objects.filter((o) => o.data.kind === "belief").length;
+  if (beliefCount > 0) {
+    lines.push(`- The store currently holds ${beliefCount} belief${beliefCount === 1 ? "" : "s"}; keep belief distinct from fact when writing back to memory.`);
+  }
 
   return lines.join("\n") + "\n";
 }
@@ -101,7 +122,7 @@ function renderUser(objects: ParsedObject[], limits: ReturnType<typeof bootstrap
   }
 
   const facts = objects
-    .filter((o) => o.data.kind === "fact" || o.data.kind === "constraint")
+    .filter((o) => o.data.kind === "fact" || o.data.kind === "constraint" || o.data.kind === "belief")
     .slice(0, limits.facts);
   if (facts.length > 0) {
     lines.push("\n## User Model");
@@ -121,25 +142,49 @@ function renderMemory(
   objects: ParsedObject[],
   contradictions: ParsedObject[],
   limits: ReturnType<typeof bootstrapLimits>,
+  activeProject: string | undefined,
+  recentEvents: ParsedObject[],
 ): string {
   const lines: string[] = ["# MEMORY\n"];
 
   const projects = objects
     .filter((o) => o.data.kind === "project")
-    .sort((a, b) => (Number(b.data.confidence ?? 0)) - (Number(a.data.confidence ?? 0)))
+    .sort((a, b) => compareProjectPriority(a, b, activeProject))
     .slice(0, Math.max(3, Math.floor(limits.memory / 2)));
 
   if (projects.length > 0) {
     lines.push("## Active Projects");
     for (const obj of projects) {
-      lines.push(`- ${obj.data.statement}`);
+      lines.push(`- ${formatTaggedStatement("project", obj.data.statement as string)}`);
     }
   }
+
+  const userModelObjects = objects
+    .filter((o) => o.data.kind === "fact" || o.data.kind === "constraint" || o.data.kind === "belief")
+    .slice(0, limits.facts);
+  const userModelIds = new Set(
+    userModelObjects
+      .map((obj) => typeof obj.data.id === "string" ? obj.data.id : null)
+      .filter((id): id is string => id !== null),
+  );
+
+  const openLoopIds = new Set(
+    objects
+      .filter((o) => o.data.kind === "constraint")
+      .filter((o) => Array.isArray(o.data.tags) && o.data.tags.some((tag) => tag === "open_loop"))
+      .map((obj) => typeof obj.data.id === "string" ? obj.data.id : null)
+      .filter((id): id is string => id !== null),
+  );
 
   // Working set is operationally useful semantic memory, not identity/value/style duplication.
   const workingSet = objects
     .filter((o) => typeof o.data.confidence === "number")
     .filter((o) => o.data.kind === "fact" || o.data.kind === "constraint" || o.data.kind === "belief")
+    .filter((o) => {
+      const id = typeof o.data.id === "string" ? o.data.id : null;
+      if (!id) return true;
+      return !userModelIds.has(id) && !openLoopIds.has(id);
+    })
     .sort((a, b) => (b.data.confidence as number) - (a.data.confidence as number))
     .slice(0, limits.memory);
 
@@ -157,7 +202,7 @@ function renderMemory(
   if (openLoopConstraints.length > 0) {
     lines.push("\n## Open Loops");
     for (const obj of openLoopConstraints) {
-      lines.push(`- ${obj.data.statement}`);
+      lines.push(`- ${formatTaggedStatement("constraint", obj.data.statement as string)}`);
     }
   }
 
@@ -169,7 +214,40 @@ function renderMemory(
     }
   }
 
-  if (projects.length === 0 && workingSet.length === 0 && openLoopConstraints.length === 0 && openContradictions.length === 0) {
+  const feedback = recentEvents
+    .filter((event) => event.data.kind === "runtime_drift")
+    .filter((event) => {
+      const details = typeof event.data.details === "object" && event.data.details !== null
+        ? event.data.details as Record<string, unknown>
+        : null;
+      return details?.code === "drift_only";
+    })
+    .sort((a, b) => {
+      const left = typeof a.data.ts === "string" ? Date.parse(a.data.ts) : 0;
+      const right = typeof b.data.ts === "string" ? Date.parse(b.data.ts) : 0;
+      return right - left;
+    })
+    .slice(0, 2);
+
+  if (feedback.length > 0) {
+    lines.push("\n## Ingest Feedback");
+    for (const event of feedback) {
+      const details = event.data.details as Record<string, unknown>;
+      const file = typeof details.file === "string" ? details.file : "workspace";
+      const message = typeof details.message === "string"
+        ? details.message
+        : "Recent runtime drift stayed observational only.";
+      lines.push(`- ${file}: ${message}`);
+    }
+  }
+
+  if (
+    projects.length === 0
+    && workingSet.length === 0
+    && openLoopConstraints.length === 0
+    && openContradictions.length === 0
+    && feedback.length === 0
+  ) {
     lines.push("No active memory yet.");
   }
 
@@ -178,4 +256,29 @@ function renderMemory(
 
 function formatTaggedStatement(kind: TaggedKind, statement: string): string {
   return `[${kind}] ${statement}`;
+}
+
+function compareProjectPriority(left: ParsedObject, right: ParsedObject, activeProject: string | undefined): number {
+  const leftBoost = projectMatchScore(left, activeProject);
+  const rightBoost = projectMatchScore(right, activeProject);
+  if (leftBoost !== rightBoost) return rightBoost - leftBoost;
+  return Number(right.data.confidence ?? 0) - Number(left.data.confidence ?? 0);
+}
+
+function projectMatchScore(obj: ParsedObject, activeProject: string | undefined): number {
+  if (!activeProject) return 0;
+  const normalized = activeProject.trim().toLowerCase();
+  if (!normalized) return 0;
+
+  const id = typeof obj.data.id === "string" ? obj.data.id.toLowerCase() : "";
+  const statement = typeof obj.data.statement === "string" ? obj.data.statement.toLowerCase() : "";
+  const relatedEntities = Array.isArray(obj.data.related_entities)
+    ? obj.data.related_entities
+        .filter((entity): entity is string => typeof entity === "string")
+        .map((entity) => entity.toLowerCase())
+    : [];
+
+  if (id === normalized || relatedEntities.includes(normalized)) return 2;
+  if (statement.includes(normalized)) return 1;
+  return 0;
 }

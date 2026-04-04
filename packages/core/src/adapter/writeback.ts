@@ -301,6 +301,9 @@ const TAGGED_KINDS = new Set<ExtractedKind>([
   "belief",
   "project",
   "preference",
+  "identity_trait",
+  "style_rule",
+  "value",
 ]);
 
 function uniqueTags(tags: string[] | undefined): string[] | undefined {

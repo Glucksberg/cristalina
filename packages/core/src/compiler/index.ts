@@ -66,8 +66,8 @@ export async function compile(
   const visibleContradictions = filterByAudience(snapshot.contradictions, options.audience, policies.audience);
 
   const scored: ScoredObject[] = filtered.map((obj) => {
-    const score = scoreObject(obj, now, policies.projection);
-    const tier = assignTier(obj, score, policies.projection);
+    const score = scoreObject(obj, now, policies.projection, options.activeProject);
+    const tier = assignTier(obj, score, policies.projection, options.activeProject);
     return { object: obj, score, tier };
   });
 
@@ -80,7 +80,16 @@ export async function compile(
   const hot = renderHot(hotObjects, visibleContradictions);
   const warm = renderWarm(warmObjects);
   const cold = renderCold(coldObjects);
-  const bootstrap = generateBootstrap(snapshot.coreObjects, visibleContradictions, options.audience, channelContext.profile);
+  const bootstrap = generateBootstrap(
+    snapshot.coreObjects,
+    visibleContradictions,
+    options.audience,
+    channelContext.profile,
+    {
+      activeProject: options.activeProject,
+      recentEvents: snapshot.events,
+    },
+  );
 
   const derivedFrom = [
     ...filtered.map((obj) => String(obj.data.id)).filter((id) => id !== "undefined"),

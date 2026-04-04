@@ -164,6 +164,58 @@ describe("generateCurationPacket", () => {
     expect(packet).not.toBeNull();
     expect(packet!.questions[0].type).toBe("privacy_clarification");
   });
+
+  it("does not include conflicting proposals for the same target in one curation packet", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "fact",
+      statement: "Current memory statement.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "revise_fact",
+      operation: "revise",
+      target_ref: { object_id: "fact-seed-001", kind: "fact" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Revised memory statement.",
+        privacy_scope: "owner_private",
+      },
+      reason: "One revision path.",
+      provenance: { supporting_events: [] },
+      confidence: 0.7,
+      privacy_scope: "owner_private",
+      risk: { level: "high", requires_human_approval: true },
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "privacy_change",
+      operation: "deprecate",
+      target_ref: { object_id: "fact-seed-001", kind: "fact" },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Deprecated memory statement.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Competing path for the same target.",
+      provenance: { supporting_events: [] },
+      confidence: 0.6,
+      privacy_scope: "owner_private",
+      risk: { level: "critical", requires_human_approval: true },
+    });
+
+    const snapshot = await store.read();
+    const packet = generateCurationPacket(snapshot, store.clock, store.idGen);
+
+    expect(packet).not.toBeNull();
+    expect(packet!.questions).toHaveLength(1);
+    expect(packet!.questions[0].proposal_refs).toHaveLength(1);
+  });
 });
 
 describe("applyRatification", () => {
@@ -760,5 +812,116 @@ describe("applyRatification", () => {
       && obj.data.statement === "Expand only when the owner explicitly asks for architecture depth.");
 
     expect(followUp).toBeTruthy();
+  });
+
+  it("accepts single-line tagged edit answers during ratification", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "fact",
+      statement: "The user prefers concise updates.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "revise_fact",
+      operation: "revise",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "The user prefers concise updates.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Owner clarified the memory kind.",
+      provenance: { supporting_events: [] },
+      confidence: 0.71,
+      privacy_scope: "owner_private",
+    });
+
+    const result = await applyRatification(store, {
+      responses: [
+        {
+          question_ref: "q-001",
+          answer_type: "edit",
+          answer_text: "[belief] The user likely prefers concise updates during status checks.",
+        },
+      ],
+      questionToProposal: new Map([["q-001", "prop-test-001"]]),
+    });
+
+    expect(result.decisions[0].candidate_payload).toMatchObject({
+      kind: "belief",
+      statement: "The user likely prefers concise updates during status checks.",
+    });
+    expect(result.applied[1].operation).toBe("REVISE");
+  });
+
+  it("rejects conflicting ratification plans before applying the batch", async () => {
+    store.appendYamlItem("core/ratified/facts.yaml", {
+      id: "fact-seed-001",
+      kind: "fact",
+      statement: "Current memory statement.",
+      status: "ratified",
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "revise_fact",
+      operation: "revise",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Revised memory statement.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Revision path.",
+      provenance: { supporting_events: [] },
+      confidence: 0.8,
+      privacy_scope: "owner_private",
+    });
+
+    await executeOperation(store, {
+      op: "PROPOSE",
+      type: "privacy_change",
+      operation: "deprecate",
+      target_ref: {
+        object_id: "fact-seed-001",
+        kind: "fact",
+      },
+      candidate_payload: {
+        kind: "fact",
+        statement: "Retire this memory.",
+        privacy_scope: "owner_private",
+      },
+      reason: "Deprecation path.",
+      provenance: { supporting_events: [] },
+      confidence: 0.7,
+      privacy_scope: "owner_private",
+    });
+
+    await expect(applyRatification(store, {
+      responses: [
+        { question_ref: "q-001", answer_type: "accept", answer_text: "Yes." },
+        { question_ref: "q-002", answer_type: "accept", answer_text: "Yes." },
+      ],
+      questionToProposal: new Map([
+        ["q-001", "prop-test-001"],
+        ["q-002", "prop-test-002"],
+      ]),
+    })).rejects.toThrow("Conflicting ratification batch");
+
+    const snapshot = await store.read();
+    const target = snapshot.coreObjects.find((obj) => obj.data.id === "fact-seed-001");
+    expect(target?.data.statement).toBe("Current memory statement.");
   });
 });

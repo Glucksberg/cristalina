@@ -117,6 +117,27 @@ describe("scoring", () => {
     const filtered = filterByAudience(objects, "public_safe");
     expect(filtered.map((o) => o.data.id)).toEqual(["b"]);
   });
+
+  it("boosts active project matches during scoring and tier assignment", () => {
+    const project: ParsedObject = {
+      data: {
+        id: "proj-runtime-map",
+        kind: "project",
+        statement: "Runtime map hardening",
+        status: "ratified",
+        confidence: 0.7,
+        evidence_count: 1,
+        last_confirmed_at: "2026-03-29T03:00:00Z",
+      },
+      file: "core/ratified/facts.yaml",
+    };
+
+    const neutralScore = scoreObject(project, "2026-03-29T12:00:00Z");
+    const focusedScore = scoreObject(project, "2026-03-29T12:00:00Z", undefined, "runtime map");
+
+    expect(focusedScore).toBeGreaterThan(neutralScore);
+    expect(assignTier(project, focusedScore, undefined, "runtime map")).toBe("hot");
+  });
 });
 
 describe("generateBootstrap", () => {
@@ -143,6 +164,86 @@ describe("generateBootstrap", () => {
     ];
     const result = generateBootstrap(objects, []);
     expect(result.value).toContain("Honesty above all.");
+  });
+
+  it("keeps beliefs in USER.md without silently migrating them into MEMORY.md", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "belief-001", kind: "belief", statement: "The user may prefer deep architecture reviews.", status: "ratified", confidence: 0.73, privacy_scope: "owner_private" }, file: "test" },
+    ];
+
+    const result = generateBootstrap(objects, []);
+    expect(result.user).toContain("[belief] The user may prefer deep architecture reviews.");
+    expect(result.memory).not.toContain("The user may prefer deep architecture reviews.");
+  });
+
+  it("renders open loop constraints only in Open Loops, not duplicated in Working Set", () => {
+    const objects: ParsedObject[] = [
+      {
+        data: {
+          id: "constraint-001",
+          kind: "constraint",
+          statement: "Confirm whether ingest feedback should show ignored edits.",
+          status: "ratified",
+          confidence: 0.81,
+          tags: ["open_loop"],
+          privacy_scope: "owner_private",
+        },
+        file: "test",
+      },
+    ];
+
+    const result = generateBootstrap(objects, []);
+    expect(result.memory).toContain("## Open Loops");
+    expect(result.memory).toContain("[constraint] Confirm whether ingest feedback should show ignored edits.");
+    expect(result.memory).not.toMatch(/## Working Set[\s\S]*Confirm whether ingest feedback should show ignored edits\./);
+  });
+
+  it("renders explicit kind tags for identity and active projects", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "idt-001", kind: "identity_trait", statement: "Governed memory companion.", status: "ratified", privacy_scope: "owner_private" }, file: "test" },
+      { data: { id: "proj-001", kind: "project", statement: "Portal hardening", status: "ratified", confidence: 0.9, privacy_scope: "owner_private" }, file: "test" },
+    ];
+
+    const result = generateBootstrap(objects, []);
+    expect(result.soul).toContain("[identity_trait] Governed memory companion.");
+    expect(result.memory).toContain("[project] Portal hardening");
+  });
+
+  it("surfaces recent drift-only ingest feedback in MEMORY.md", () => {
+    const result = generateBootstrap([], [], "owner_private", "standard", {
+      recentEvents: [
+        {
+          data: {
+            id: "evt-001",
+            kind: "runtime_drift",
+            ts: "2026-03-29T11:00:00Z",
+            details: {
+              code: "drift_only",
+              file: "USER.md",
+              message: "Workspace edit stayed observational only.",
+            },
+          },
+          file: "events/2026-03.jsonl",
+        },
+      ],
+    });
+
+    expect(result.memory).toContain("## Ingest Feedback");
+    expect(result.memory).toContain("USER.md: Workspace edit stayed observational only.");
+    expect(result.memory).not.toContain("No active memory yet.");
+  });
+
+  it("prioritizes the active project near the top of Active Projects", () => {
+    const objects: ParsedObject[] = [
+      { data: { id: "proj-001", kind: "project", statement: "Portal hardening", status: "ratified", confidence: 0.8, privacy_scope: "owner_private" }, file: "test" },
+      { data: { id: "proj-002", kind: "project", statement: "Runtime cognition map", status: "ratified", confidence: 0.6, privacy_scope: "owner_private" }, file: "test" },
+    ];
+
+    const result = generateBootstrap(objects, [], "owner_private", "standard", { activeProject: "runtime cognition" });
+    const activeProjectsBlock = result.memory.split("## Active Projects")[1] ?? "";
+    expect(activeProjectsBlock.indexOf("[project] Runtime cognition map")).toBeLessThan(
+      activeProjectsBlock.indexOf("[project] Portal hardening"),
+    );
   });
 });
 
@@ -291,7 +392,8 @@ describe("compile", () => {
     });
 
     const result = await compile(store, { audience: "public_safe" });
-    expect(result.bootstrap.memory).toContain("Public fact.");
+    expect(result.bootstrap.user).toContain("Public fact.");
+    expect(result.bootstrap.user).not.toContain("Private secret.");
     expect(result.bootstrap.memory).not.toContain("Private secret.");
   });
 

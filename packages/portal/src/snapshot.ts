@@ -274,7 +274,9 @@ export async function buildPortalSnapshot(args: {
   const profile = args.profile ?? "deep";
   const store = await readStore(args.storePath);
   const lint = await lintStore(args.storePath);
-  const bootstrap = generateBootstrap(store.coreObjects, store.contradictions, audience, profile);
+  const bootstrap = generateBootstrap(store.coreObjects, store.contradictions, audience, profile, {
+    recentEvents: store.events,
+  });
   const byFile = groupByFile(store);
   const context: SnapshotContext = { store, byFile, bootstrap };
 

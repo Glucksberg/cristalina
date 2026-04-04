@@ -14,11 +14,30 @@ export interface ScoredObject {
   tier: "hot" | "warm" | "cold";
 }
 
+function objectMatchesActiveProject(obj: ParsedObject, activeProject: string | undefined): boolean {
+  if (!activeProject) return false;
+  const normalized = activeProject.trim().toLowerCase();
+  if (!normalized) return false;
+
+  const id = typeof obj.data.id === "string" ? obj.data.id.toLowerCase() : "";
+  const statement = typeof obj.data.statement === "string" ? obj.data.statement.toLowerCase() : "";
+  const relatedEntities = Array.isArray(obj.data.related_entities)
+    ? obj.data.related_entities
+        .filter((entity): entity is string => typeof entity === "string")
+        .map((entity) => entity.toLowerCase())
+    : [];
+
+  return id === normalized
+    || statement.includes(normalized)
+    || relatedEntities.includes(normalized);
+}
+
 /** Score a memory object for compiled context relevance */
 export function scoreObject(
   obj: ParsedObject,
   now: string,
   policy: ProjectionPolicy = DEFAULT_PROJECTION_POLICY,
+  activeProject?: string,
 ): number {
   let score = 0;
   const data = obj.data;
@@ -53,6 +72,10 @@ export function scoreObject(
     else if (daysSince < 30) score += 5;
   }
 
+  if (objectMatchesActiveProject(obj, activeProject)) {
+    score += typeof data.kind === "string" && data.kind === "project" ? 25 : 15;
+  }
+
   return score;
 }
 
@@ -61,12 +84,17 @@ export function assignTier(
   obj: ParsedObject,
   score: number,
   policy: ProjectionPolicy = DEFAULT_PROJECTION_POLICY,
+  activeProject?: string,
 ): "hot" | "warm" | "cold" {
   const kind = obj.data.kind;
 
   // Identity and values are always HOT
   if (typeof kind === "string" && policy.alwaysHotKinds.has(kind as MemoryObjectKind)) {
     return score > 20 ? "hot" : "warm";
+  }
+
+  if (objectMatchesActiveProject(obj, activeProject) && score >= 20) {
+    return "hot";
   }
 
   // High score = HOT, medium = WARM, low = COLD

@@ -75,6 +75,21 @@ function findTargetObject(store: ParsedStore, proposal: ParsedObject): ParsedObj
   return store.coreObjects.find((obj) => obj.data.id === targetRef.object_id) ?? null;
 }
 
+function conflictKeysForProposal(proposal: ParsedObject): string[] {
+  const keys = new Set<string>();
+  const targetRef = getProposalTargetRef(proposal);
+  if (typeof targetRef.object_id === "string") {
+    keys.add(`object:${targetRef.object_id}`);
+  }
+
+  const payload = getProposalPayload(proposal);
+  if (typeof payload.related_object_id === "string") {
+    keys.add(`object:${payload.related_object_id}`);
+  }
+
+  return [...keys];
+}
+
 /** Score a proposal for curation priority. */
 function scoreProposal(
   store: ParsedStore,
@@ -191,7 +206,18 @@ export function generateCurationPacket(
     .sort((a, b) => b.score - a.score);
 
   const count = Math.min(scored.length, activePolicy.defaultQuestionCount);
-  const selected = scored.slice(0, count);
+  const selected: typeof scored = [];
+  const seenConflictKeys = new Set<string>();
+
+  for (const entry of scored) {
+    if (selected.length >= count) break;
+    const conflictKeys = conflictKeysForProposal(entry.proposal);
+    if (conflictKeys.some((key) => seenConflictKeys.has(key))) continue;
+    selected.push(entry);
+    for (const key of conflictKeys) {
+      seenConflictKeys.add(key);
+    }
+  }
 
   const questions: CurationQuestion[] = selected.map(({ proposal }) => {
     const qId = idGen.next("question");

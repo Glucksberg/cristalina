@@ -162,6 +162,12 @@ interface ParsedEditSegment {
   statement: string;
 }
 
+function hasStructuredEditSyntax(raw: string): boolean {
+  const trimmed = raw.trim();
+  return /^\[(?<kind>[a-z_]+)\](?:\[(?<scope>[a-z_]+)\])?\s+.+$/i.test(trimmed)
+    || /^(?<kind>[a-z_]+)(?:\s*\[(?<scope>[a-z_]+)\])?\s*:\s*.+$/i.test(trimmed);
+}
+
 function parseEditSegment(
   raw: string,
   fallbackKind: MemoryObjectKindType,
@@ -279,6 +285,28 @@ function withEditedStatement(context: NormalizationContext, operation = context.
         follow_up_payloads: structured.followUps,
       },
     );
+  }
+
+  if (hasStructuredEditSyntax(context.seed.editedText)) {
+    const single = parseEditSegment(
+      context.seed.editedText,
+      fallbackKind,
+      fallbackScope,
+    );
+
+    if (single) {
+      return buildDecision(
+        context.response,
+        context.seed,
+        operation,
+        {
+          ...context.seed.candidatePayload,
+          kind: single.kind,
+          privacy_scope: single.privacy_scope,
+          statement: single.statement,
+        },
+      );
+    }
   }
 
   return buildDecision(
