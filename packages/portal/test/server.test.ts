@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { appendFileSync, cpSync, mkdtempSync, rmSync } from "node:fs";
+import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import WebSocket from "ws";
@@ -44,6 +44,49 @@ describe("startPortalServer", () => {
       await portal.close();
     }
   });
+
+  it("shuts down cleanly even when a WebSocket client is still connected", async () => {
+    const portal = await startPortalServer({
+      storePath,
+      host: "127.0.0.1",
+      port: 0,
+    });
+
+    const socket = new WebSocket(`${portal.url.replace("http", "ws")}/ws`);
+    await nextSnapshot(socket);
+
+    await expect(portal.close()).resolves.toBeUndefined();
+  });
+
+  it("keeps serving after a transient snapshot rebuild failure", async () => {
+    const portal = await startPortalServer({
+      storePath,
+      host: "127.0.0.1",
+      port: 0,
+    });
+
+    const originalFacts = readFileSync(resolve(storePath, "core", "ratified", "facts.yaml"), "utf-8");
+    const socket = new WebSocket(`${portal.url.replace("http", "ws")}/ws`);
+
+    try {
+      await nextSnapshot(socket);
+
+      writeFileSync(resolve(storePath, "core", "ratified", "facts.yaml"), "items: [\n", "utf-8");
+      await sleep(500);
+
+      const response = await fetch(`${portal.url}/api/snapshot`);
+      expect(response.ok).toBe(true);
+
+      writeFileSync(resolve(storePath, "core", "ratified", "facts.yaml"), originalFacts, "utf-8");
+      appendFileSync(resolve(storePath, "core", "narrative", "story.md"), "\nRecovered after invalid YAML.\n", "utf-8");
+
+      const updated = await nextSnapshot(socket);
+      expect(updated.changedPaths).toContain("core/narrative/story.md");
+    } finally {
+      socket.close();
+      await portal.close();
+    }
+  });
 });
 
 function nextSnapshot(socket: WebSocket): Promise<{ snapshot: PortalSnapshot; changedPaths: string[] }> {
@@ -62,5 +105,11 @@ function nextSnapshot(socket: WebSocket): Promise<{ snapshot: PortalSnapshot; ch
       clearTimeout(timeout);
       rejectPromise(error);
     });
+  });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => {
+    setTimeout(resolvePromise, ms);
   });
 }

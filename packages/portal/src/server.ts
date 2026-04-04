@@ -52,17 +52,24 @@ export async function startPortalServer(options: PortalServerOptions): Promise<P
     socket.on("close", () => {
       clients.delete(socket);
     });
+    socket.on("error", () => {
+      clients.delete(socket);
+    });
   });
 
   const watcher = await createWatcher(storePath, async (changedPaths) => {
-    currentSnapshot = await buildPortalSnapshot({ storePath, audience, profile });
-    const payload = JSON.stringify({
-      type: "snapshot",
-      snapshot: currentSnapshot,
-      changedPaths,
-    } satisfies SnapshotMessage);
-    for (const client of clients) {
-      if (client.readyState === client.OPEN) client.send(payload);
+    try {
+      currentSnapshot = await buildPortalSnapshot({ storePath, audience, profile });
+      const payload = JSON.stringify({
+        type: "snapshot",
+        snapshot: currentSnapshot,
+        changedPaths,
+      } satisfies SnapshotMessage);
+      for (const client of clients) {
+        if (client.readyState === client.OPEN) client.send(payload);
+      }
+    } catch (error) {
+      console.error(`[cristalina-portal] failed to rebuild snapshot: ${(error as Error).message}`);
     }
   });
 
@@ -83,6 +90,11 @@ export async function startPortalServer(options: PortalServerOptions): Promise<P
     url: `http://${host}:${resolvedPort}`,
     close: async () => {
       await watcher.close();
+      for (const client of clients) {
+        if (client.readyState === client.OPEN || client.readyState === client.CONNECTING) {
+          client.terminate();
+        }
+      }
       await new Promise<void>((resolveClose, rejectClose) => {
         websocketServer.close((error) => {
           if (error) rejectClose(error);
@@ -142,8 +154,10 @@ async function createWatcher(
 ): Promise<FSWatcher> {
   const pending = new Set<string>();
   let timer: NodeJS.Timeout | null = null;
+  let closing = false;
 
   const flush = async () => {
+    if (closing) return;
     timer = null;
     const changedPaths = [...pending];
     pending.clear();
@@ -161,6 +175,7 @@ async function createWatcher(
   });
 
   const schedule = (path: string) => {
+    if (closing) return;
     pending.add(relativePath(storePath, path));
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
@@ -179,6 +194,18 @@ async function createWatcher(
       resolveReady();
     });
   });
+
+  const originalClose = watcher.close.bind(watcher);
+  watcher.close = async () => {
+    closing = true;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    pending.clear();
+    await originalClose();
+  };
+
   return watcher;
 }
 

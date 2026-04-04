@@ -1,10 +1,19 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { syncOpenClawWorkspace } from "@cristalina/openclaw";
 import { startPortalServer } from "@cristalina/portal";
+import {
+  runOnboardWizard,
+  WizardCancelledError,
+  type AudienceOption,
+  type ProfileOption,
+  type SetupSurface,
+  type WizardSeed,
+} from "./onboard-wizard.js";
+import { directoryHasEntries, getPathState } from "./path-state.js";
 
 export interface CliIo {
   log: (message: string) => void;
@@ -12,19 +21,24 @@ export interface CliIo {
 }
 
 interface SetupOptions {
+  setupSurface: SetupSurface;
   storePath: string;
   workspacePath?: string;
   storeName: string;
   displayName: string;
   ownerName: string;
   agentName: string;
-  audience: "owner_private";
+  audience: AudienceOption;
   channel: string;
-  profile: "deep";
+  profile: ProfileOption;
   yes: boolean;
   launchPortal: boolean;
   portalHost: string;
   portalPort: number;
+}
+
+interface NormalizedSetupInput extends WizardSeed {
+  wizard: boolean;
 }
 
 export function onboardHelpText(): string {
@@ -43,6 +57,7 @@ Options:
   --audience <scope>     Projection audience (default: owner_private)
   --channel <name>       Projection channel (default: owner_private_runtime)
   --profile <name>       Projection profile (default: deep)
+  --wizard               Force the interactive setup wizard even when flags are provided
   --launch-portal        Start the live portal after setup
   --portal-host <host>   Portal bind host (default: 127.0.0.1)
   --portal-port <port>   Portal bind port (default: 8787)
@@ -50,6 +65,8 @@ Options:
   -h, --help             Show this help
 
 Examples:
+  cristalina onboard setup
+  cristalina onboard setup --wizard --store ./.cristalina
   cristalina onboard setup --store ./.cristalina
   cristalina onboard setup --store ./.cristalina --workspace /abs/path/to/openclaw --yes
   cristalina onboard setup --store ./.cristalina --launch-portal`;
@@ -59,142 +76,143 @@ export async function runOnboardCli(
   argv: string[],
   io: CliIo = { log: console.log, error: console.error },
 ): Promise<number> {
-  const { positionals, values } = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    options: {
-      store: { type: "string", default: ".cristalina" },
-      workspace: { type: "string" },
-      "store-name": { type: "string" },
-      "display-name": { type: "string" },
-      "owner-name": { type: "string" },
-      "agent-name": { type: "string" },
-      audience: { type: "string", default: "owner_private" },
-      channel: { type: "string", default: "owner_private_runtime" },
-      profile: { type: "string", default: "deep" },
-      "launch-portal": { type: "boolean", default: false },
-      "portal-host": { type: "string", default: "127.0.0.1" },
-      "portal-port": { type: "string", default: "8787" },
-      yes: { type: "boolean", default: false },
-      help: { type: "boolean", short: "h", default: false },
-    },
-  });
-
-  const command = positionals[0];
-  if (values.help) {
-    io.log(onboardHelpText());
-    return 0;
-  }
-
-  if (!command) {
-    io.log(onboardHelpText());
-    return 1;
-  }
-
-  if (command !== "setup") {
-    io.error(`Unknown command: ${command}`);
-    io.log(onboardHelpText());
-    return 1;
-  }
-
-  const options = await resolveSetupOptions(values);
-  const createdStore = ensureStore(options);
-  const steps: string[] = [];
-
-  if (createdStore) {
-    steps.push(`Initialized starter store at ${options.storePath}`);
-  } else {
-    steps.push(`Using existing store at ${options.storePath}`);
-  }
-
-  if (options.workspacePath) {
-    const workspacePrepared = await prepareWorkspace(options.workspacePath, options.yes);
-    const result = await syncOpenClawWorkspace({
-      storePath: options.storePath,
-      workspacePath: workspacePrepared,
-      audience: options.audience,
-      channel: options.channel,
-      profile: options.profile,
+  try {
+    const { positionals, values } = parseArgs({
+      args: argv,
+      allowPositionals: true,
+      options: {
+        store: { type: "string", default: ".cristalina" },
+        workspace: { type: "string" },
+        "store-name": { type: "string" },
+        "display-name": { type: "string" },
+        "owner-name": { type: "string" },
+        "agent-name": { type: "string" },
+        audience: { type: "string", default: "owner_private" },
+        channel: { type: "string", default: "owner_private_runtime" },
+        profile: { type: "string", default: "deep" },
+        wizard: { type: "boolean", default: false },
+        "launch-portal": { type: "boolean", default: false },
+        "portal-host": { type: "string", default: "127.0.0.1" },
+        "portal-port": { type: "string", default: "8787" },
+        yes: { type: "boolean", default: false },
+        help: { type: "boolean", short: "h", default: false },
+      },
     });
-    writeWorkspaceOnboarding(workspacePrepared, options);
-    steps.push(`Bootstrapped OpenClaw workspace at ${result.workspacePath}`);
-  } else {
-    writeStoreOnboarding(options.storePath, options);
-    steps.push("Wrote local onboarding guide into the store root");
-  }
 
-  io.log("Cristalina onboarding completed.");
-  for (const step of steps) {
-    io.log(`- ${step}`);
-  }
+    const command = positionals[0];
+    if (values.help) {
+      io.log(onboardHelpText());
+      return 0;
+    }
 
-  if (options.launchPortal) {
-    const portal = await startPortalServer({
-      storePath: options.storePath,
-      host: options.portalHost,
-      port: options.portalPort,
-      audience: options.audience,
-      profile: options.profile,
-    });
-    io.log(`Portal live at ${portal.url}`);
-    await waitForSignal(() => portal.close());
+    if (!command) {
+      io.log(onboardHelpText());
+      return 1;
+    }
+
+    if (command !== "setup") {
+      io.error(`Unknown command: ${command}`);
+      io.log(onboardHelpText());
+      return 1;
+    }
+
+    const setupInput = normalizeSetupInput(values);
+    const options = await resolveSetupOptions(setupInput);
+    const createdStore = ensureStore(options);
+    const steps: string[] = [];
+
+    if (createdStore) {
+      steps.push(`Initialized starter store at ${options.storePath}`);
+    } else {
+      steps.push(`Using existing store at ${options.storePath}`);
+    }
+
+    if (options.workspacePath) {
+      const workspacePrepared = await prepareWorkspace(options.workspacePath, options.yes);
+      const result = await syncOpenClawWorkspace({
+        storePath: options.storePath,
+        workspacePath: workspacePrepared,
+        audience: options.audience,
+        channel: options.channel,
+        profile: options.profile,
+      });
+      writeWorkspaceOnboarding(workspacePrepared, options);
+      steps.push(`Bootstrapped OpenClaw workspace at ${result.workspacePath}`);
+    } else {
+      writeStoreOnboarding(options.storePath, options);
+      steps.push("Wrote local onboarding guide into the store root");
+    }
+
+    io.log("Cristalina onboarding completed.");
+    for (const step of steps) {
+      io.log(`- ${step}`);
+    }
+
+    if (options.launchPortal) {
+      const portal = await startPortalServer({
+        storePath: options.storePath,
+        host: options.portalHost,
+        port: options.portalPort,
+        audience: options.audience,
+        profile: options.profile,
+      });
+      io.log(`Portal live at ${portal.url}`);
+      await waitForSignal(() => portal.close());
+      return 0;
+    }
+
+    io.log(nextSteps(options));
     return 0;
+  } catch (error) {
+    if (error instanceof WizardCancelledError) {
+      return 0;
+    }
+    io.error(`Error: ${(error as Error).message}`);
+    return 2;
   }
-
-  io.log(nextSteps(options));
-  return 0;
 }
 
-async function resolveSetupOptions(values: ReturnType<typeof parseArgs>["values"]): Promise<SetupOptions> {
-  const storeValue = stringOption(values.store) ?? ".cristalina";
-  const workspaceValue = stringOption(values.workspace);
-  const displayNameValue = stringOption(values["display-name"]);
-  const ownerNameValue = stringOption(values["owner-name"]);
-  const agentNameValue = stringOption(values["agent-name"]);
-  const storeNameValue = stringOption(values["store-name"]);
-  const audienceValue = stringOption(values.audience) ?? "owner_private";
-  const channelValue = stringOption(values.channel) ?? "owner_private_runtime";
-  const profileValue = stringOption(values.profile) ?? "deep";
-  const launchPortalValue = booleanOption(values["launch-portal"]);
-  const portalHostValue = stringOption(values["portal-host"]) ?? "127.0.0.1";
-  const portalPortValue = stringOption(values["portal-port"]) ?? "8787";
-  const yesValue = booleanOption(values.yes);
+async function resolveSetupOptions(setupInput: NormalizedSetupInput): Promise<SetupOptions> {
+  if (shouldRunWizard(setupInput)) {
+    return runOnboardWizard(setupInput);
+  }
 
-  const displayNameDefault = displayNameValue ?? "Cristalina Store";
-  const ownerNameDefault = ownerNameValue ?? "Owner";
-  const agentNameDefault = agentNameValue ?? "Cristalina";
+  const displayNameDefault = setupInput.displayName ?? "Cristalina Store";
+  const ownerNameDefault = setupInput.ownerName ?? "Owner";
+  const agentNameDefault = setupInput.agentName ?? "Cristalina";
 
   const interactive = process.stdin.isTTY && process.stdout.isTTY;
   const rl = interactive ? createInterface({ input, output }) : null;
 
   try {
-    const displayName = displayNameValue
+    const displayName = setupInput.displayName
       ?? await prompt(rl, "Display name", displayNameDefault);
-    const ownerName = ownerNameValue
+    const ownerName = setupInput.ownerName
       ?? await prompt(rl, "Owner name", ownerNameDefault);
-    const agentName = agentNameValue
+    const agentName = setupInput.agentName
       ?? await prompt(rl, "Agent name", agentNameDefault);
-    const workspacePath = workspaceValue ?? await optionalPrompt(rl, "OpenClaw workspace path (blank to skip)");
-    const storeName = storeNameValue ?? slugify(displayName);
-    const portalPort = Number.parseInt(portalPortValue, 10);
+    const workspacePath = setupInput.workspacePath ?? await optionalPrompt(rl, "OpenClaw workspace path (blank to skip)");
+    const storeName = setupInput.storeName ?? slugify(displayName);
+    const portalPort = setupInput.portalPort;
 
     if (!Number.isFinite(portalPort)) {
-      throw new Error(`Invalid portal port: ${portalPortValue}`);
+      throw new Error(`Invalid portal port: ${setupInput.portalPort}`);
     }
 
     return {
-      storePath: resolve(storeValue),
+      setupSurface: inferSetupSurface(setupInput),
+      storePath: resolve(setupInput.storePath),
       workspacePath: workspacePath ? resolve(workspacePath) : undefined,
       storeName,
       displayName,
       ownerName,
       agentName,
-      audience: audienceValue as "owner_private",
-      channel: channelValue,
-      profile: profileValue as "deep",
-      yes: yesValue,
-      launchPortal: launchPortalValue,
-      portalHost: portalHostValue,
+      audience: setupInput.audience,
+      channel: setupInput.channel,
+      profile: setupInput.profile,
+      yes: setupInput.yes,
+      launchPortal: setupInput.launchPortal,
+      portalHost: setupInput.portalHost,
       portalPort,
     };
   } finally {
@@ -203,7 +221,11 @@ async function resolveSetupOptions(values: ReturnType<typeof parseArgs>["values"
 }
 
 function ensureStore(options: SetupOptions): boolean {
-  if (directoryHasEntries(options.storePath)) {
+  const pathState = getPathState(options.storePath);
+  if (pathState === "file") {
+    throw new Error(`Store path points to a file, not a directory: ${options.storePath}`);
+  }
+  if (pathState === "directory-nonempty") {
     return false;
   }
 
@@ -453,6 +475,10 @@ This directory is reserved for timestamped store snapshots created by rollback t
 
 async function prepareWorkspace(workspacePath: string, autoYes: boolean): Promise<string> {
   const resolvedWorkspace = resolve(workspacePath);
+  const pathState = getPathState(resolvedWorkspace);
+  if (pathState === "file") {
+    throw new Error(`Workspace path points to a file, not a directory: ${resolvedWorkspace}`);
+  }
   mkdirSync(resolvedWorkspace, { recursive: true });
 
   if (directoryHasEntries(resolvedWorkspace)) {
@@ -542,10 +568,6 @@ function nextSteps(options: SetupOptions): string {
   return steps.join("\n");
 }
 
-function directoryHasEntries(path: string): boolean {
-  return existsSync(path) && readdirSync(path).length > 0;
-}
-
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -556,6 +578,72 @@ function slugify(value: string): string {
 
 function quote(value: string): string {
   return JSON.stringify(value);
+}
+
+function normalizeSetupInput(values: ReturnType<typeof parseArgs>["values"]): NormalizedSetupInput {
+  const storePath = stringOption(values.store) ?? ".cristalina";
+  const workspacePath = stringOption(values.workspace);
+  const displayName = stringOption(values["display-name"]);
+  const ownerName = stringOption(values["owner-name"]);
+  const agentName = stringOption(values["agent-name"]);
+  const storeName = stringOption(values["store-name"]);
+  const audience = (stringOption(values.audience) ?? "owner_private") as AudienceOption;
+  const channel = stringOption(values.channel) ?? "owner_private_runtime";
+  const profile = (stringOption(values.profile) ?? "deep") as ProfileOption;
+  const launchPortal = booleanOption(values["launch-portal"]);
+  const portalHost = stringOption(values["portal-host"]) ?? "127.0.0.1";
+  const portalPortRaw = stringOption(values["portal-port"]) ?? "8787";
+  const portalPort = Number.parseInt(portalPortRaw, 10);
+
+  if (!Number.isFinite(portalPort)) {
+    throw new Error(`Invalid portal port: ${portalPortRaw}`);
+  }
+
+  return {
+    storePath,
+    workspacePath,
+    storeName,
+    displayName,
+    ownerName,
+    agentName,
+    audience,
+    channel,
+    profile,
+    yes: booleanOption(values.yes),
+    wizard: booleanOption(values.wizard),
+    launchPortal,
+    portalHost,
+    portalPort,
+  };
+}
+
+function shouldRunWizard(input: NormalizedSetupInput): boolean {
+  const interactive = process.stdin.isTTY && process.stdout.isTTY;
+  return interactive && (input.wizard || !hasExplicitSetupOverrides(input));
+}
+
+function hasExplicitSetupOverrides(input: NormalizedSetupInput): boolean {
+  return Boolean(
+    input.workspacePath
+    || input.storeName
+    || input.displayName
+    || input.ownerName
+    || input.agentName
+    || input.launchPortal
+    || input.portalHost !== "127.0.0.1"
+    || input.portalPort !== 8787
+    || input.audience !== "owner_private"
+    || input.channel !== "owner_private_runtime"
+    || input.profile !== "deep"
+    || input.storePath !== ".cristalina",
+  );
+}
+
+function inferSetupSurface(input: NormalizedSetupInput): SetupSurface {
+  if (input.workspacePath && input.launchPortal) return "full";
+  if (input.workspacePath) return "openclaw";
+  if (input.launchPortal) return "portal";
+  return "store_only";
 }
 
 function stringOption(value: string | boolean | (string | boolean)[] | undefined): string | undefined {

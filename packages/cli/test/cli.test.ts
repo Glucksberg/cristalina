@@ -128,4 +128,41 @@ describe("cristalina CLI", () => {
     expect(existsSync(resolve(workspacePath, "CRISTALINA-ONBOARDING.md"))).toBe(true);
     expect(existsSync(resolve(workspacePath, "junk.txt"))).toBe(false);
   });
+
+  it("returns a friendly error when the store path points to a file", async () => {
+    const { io, errors } = createIo();
+    const fileStorePath = resolve(root, "store-file");
+    writeFileSync(fileStorePath, "not-a-directory", "utf-8");
+
+    const code = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", fileStorePath,
+      "--display-name", "My Cristalina",
+    ], io);
+
+    expect(code).toBe(2);
+    expect(errors[0]).toContain("Store path points to a file");
+  });
+
+  it("returns a friendly error when the workspace path points to a file", async () => {
+    const { io, errors } = createIo();
+    const freshStorePath = resolve(root, "fresh-store", ".cristalina");
+    const fileWorkspacePath = resolve(root, "workspace-file");
+    writeFileSync(fileWorkspacePath, "not-a-directory", "utf-8");
+
+    const code = await runCristalinaCli([
+      "onboard",
+      "setup",
+      "--store", freshStorePath,
+      "--workspace", fileWorkspacePath,
+      "--display-name", "My Cristalina",
+      "--owner-name", "Markus",
+      "--agent-name", "Cristalina",
+      "--yes",
+    ], io);
+
+    expect(code).toBe(2);
+    expect(errors[0]).toContain("Workspace path points to a file");
+  });
 });
